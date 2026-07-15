@@ -68,8 +68,8 @@ test("host tạo phòng và bắt đầu realtime chỉ với một đại diệ
   const state = await playingState;
   assert.equal(state.playersCount, 1);
   assert.ok(state.game);
-  assert.equal(Object.keys(state.game.towers).length, 1);
-  assert.equal(state.game.towers[joined1.teamId].level, 0);
+  assert.equal(state.game.hands[joined1.teamId].length, 6);
+  assert.equal(state.game.currentTeamId, joined1.teamId);
 });
 
 test("phòng nhận đủ 8 đại diện, mỗi đội một người và chặn người thứ 9", async (t) => {
