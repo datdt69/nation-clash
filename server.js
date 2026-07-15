@@ -272,7 +272,7 @@ function finishGame(room) {
 }
 
 function startGame(room) {
-  if (room.players.size < 2) throw new Error("Cần ít nhất 2 người chơi");
+  if (room.players.size < 1) throw new Error("Cần ít nhất 1 người chơi");
   clearRoomTimer(room);
   room.roundIndex = 0;
   room.champions = null;
@@ -300,12 +300,7 @@ function findPlayerByToken(room, playerToken) {
   return [...room.players.values()].find((player) => player.token === playerToken);
 }
 
-function assignTeam(room, preferredIndex) {
-  if (Number.isInteger(preferredIndex)) {
-    const preferred = room.teams[preferredIndex];
-    if (preferred && preferred.players.length < TEAM_SIZE) return preferred;
-    return null;
-  }
+function assignTeam(room) {
   const available = room.teams
     .filter((team) => team.players.length < TEAM_SIZE)
     .sort((a, b) => a.players.length - b.players.length || a.index - b.index);
@@ -403,7 +398,7 @@ io.on("connection", (socket) => {
 
   socket.on(
     "player:join",
-    ({ code, nickname, playerToken, teamNumber } = {}, callback = () => {}) => {
+    ({ code, nickname, playerToken } = {}, callback = () => {}) => {
       const normalizedCode = String(code || "").trim().toUpperCase();
       const room = rooms.get(normalizedCode);
       const safeName = cleanNickname(nickname);
@@ -422,17 +417,9 @@ io.on("connection", (socket) => {
         if (room.players.size >= MAX_PLAYERS) {
           return callback({ ok: false, message: "Phòng đã đủ 8 đại diện" });
         }
-        const requestedTeam = Number(teamNumber);
-        if (!Number.isInteger(requestedTeam) || requestedTeam < 1 || requestedTeam > 8) {
-          return callback({ ok: false, message: "Hãy chọn đội từ 1 đến 8" });
-        }
-        const preferredIndex = requestedTeam - 1;
-        const team = assignTeam(room, preferredIndex);
+        const team = assignTeam(room);
         if (!team) {
-          return callback({
-            ok: false,
-            message: "Đội này đã có đại diện, hãy kiểm tra lại",
-          });
+          return callback({ ok: false, message: "Không còn đội trống" });
         }
         player = {
           id: token(8),
