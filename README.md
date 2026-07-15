@@ -1,17 +1,16 @@
-# Xây Việt Nam 2045
+# Bàn Cờ Kinh Tế
 
-Game Stack realtime một chạm cho bài thuyết trình **Kinh tế thị trường định hướng XHCN ở Việt Nam**. Tối đa 8 nhóm, mỗi nhóm cử một đại diện. Người chơi không cần biết kiến thức trước khi vào game.
+Game bluff realtime cho bài thuyết trình **Kinh tế thị trường định hướng XHCN ở Việt Nam**. Tối đa 8 nhóm, mỗi nhóm cử một đại diện giữ tay bài bí mật.
 
-## Luật chơi
+## Luật trong 20 giây
 
-Khối chạy ngang. Chạm màn hình hoặc nhấn `Space` để thả. Phần đặt lệch bị cắt; đặt càng chuẩn thì công trình càng dễ xây cao.
+1. Mỗi vòng bàn yêu cầu một loại lá: **Thị trường**, **An sinh** hoặc **Nhà nước**.
+2. Đến lượt, chọn 1–3 lá, úp xuống và tuyên bố tất cả đều là loại đang được yêu cầu. Người chơi được phép nói dối.
+3. Đội kế tiếp có thể đánh tiếp hoặc bấm **Tố gian**.
+4. Nếu tố đúng, người nói dối mất uy tín. Nếu tố sai, người tố mất uy tín.
+5. Lá **Đổi mới** thay được mọi loại.
 
-Các khối đại diện cho sản xuất, thị trường, phúc lợi, hạ tầng công và ổn định. Mỗi phút có một biến cố. Công trình có GDP cao nhưng phúc lợi hoặc ổn định quá thấp sẽ mất tầng. Cuối trận công bố hai đội:
-
-- Tăng trưởng cao nhất.
-- Phát triển toàn diện nhất.
-
-Trận mặc định kéo dài 6 phút. Đặt biến môi trường `MATCH_SECONDS` để thay đổi.
+Mỗi lượt có 12 giây. Sau tối đa sáu lượt đánh, vòng tự chốt để tổng thời lượng phù hợp phần trình bày 10–15 phút. Vòng có đủ cả ba trụ thị trường–an sinh–Nhà nước thưởng điểm cân bằng cho tất cả đội.
 
 ## Chạy local
 
@@ -25,8 +24,4 @@ Mở `http://localhost:3000`. Host tạo phòng và chiếu QR; người vào tr
 
 ## Deploy Render
 
-Repo có sẵn `render.yaml`:
-
-- Build: `npm ci`
-- Start: `npm start`
-- Health check: `/health`
+Repo có sẵn `render.yaml`: build `npm ci`, start `npm start`, health check `/health`.
