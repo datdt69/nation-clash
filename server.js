@@ -5,7 +5,7 @@ const http = require("node:http");
 const QRCode = require("qrcode");
 const { Server } = require("socket.io");
 const { createTeam, serializeTeam } = require("./game-engine");
-const { createGame, play, challenge, advance, serialize } = require("./bluff-engine");
+const { createGame, tick, input, objective, score } = require("./route-engine");
 
 const PORT = Number(process.env.PORT || 3000);
 const app = express();
@@ -32,7 +32,8 @@ function state(room, host = false, viewerTeamId = null) {
   return {
     code: room.code, status: room.status, playersCount: room.players.size, maxPlayers: 8,
     teams: room.teams.map(team => serializeTeam(team, host)),
-    game: room.game ? serialize(room.game, viewerTeamId, host) : null,
+    game: room.game || null,
+    objective: room.game && viewerTeamId ? objective(room.game, viewerTeamId) : null,
     champions: room.champions,
   };
 }
@@ -45,9 +46,8 @@ function emitState(room) {
 function finish(room) {
   room.status = "finished";
   const teams = activeTeams(room);
-  for (const team of teams) team.score = room.game.scores[team.id] || 0;
-  const growth = [...teams].sort((a,b) => (room.game.scores[b.id]||0)-(room.game.scores[a.id]||0))[0];
-  const development = [...teams].sort((a,b) => ((room.game.scores[b.id]||0)+(room.game.credibility[b.id]||0)*3)-((room.game.scores[a.id]||0)+(room.game.credibility[a.id]||0)*3))[0];
+  const growth = [...teams].sort((a,b) => b.gdp-a.gdp)[0];
+  const development = [...teams].sort((a,b) => score(b)-score(a))[0];
   room.champions = { growth: growth?.id, development: development?.id };
   emitState(room);
 }
@@ -96,15 +96,14 @@ io.on("connection", socket => {
     socket.data.player={roomCode:room.code,playerId:player.id}; socket.join(`${room.code}:players`);
     cb({ok:true,playerToken:player.token,playerId:player.id,teamId:player.teamId}); emitState(room);
   });
-  socket.on("player:play", ({code,playerToken,cardIds}={},cb=()=>{}) => { const room=rooms.get(String(code||"").toUpperCase()); const player=room&&findPlayer(room,playerToken); if(room?.status!=="playing"||!player)return cb({ok:false}); const result=play(room.game,player.teamId,cardIds);cb(result);emitState(room); });
-  socket.on("player:challenge", ({code,playerToken}={},cb=()=>{}) => { const room=rooms.get(String(code||"").toUpperCase()); const player=room&&findPlayer(room,playerToken); if(room?.status!=="playing"||!player)return cb({ok:false});const result=challenge(room.game,player.teamId);cb(result);emitState(room); });
+  socket.on("player:input", ({code,playerToken,direction}={}) => { const room=rooms.get(String(code||"").toUpperCase()); const player=room&&findPlayer(room,playerToken); if(room?.status==="playing"&&player)input(room.game,player.teamId,direction); });
   socket.on("disconnect",()=>{const id=socket.data.player;const room=id&&rooms.get(id.roomCode);const player=room?.players.get(id.playerId);if(player){player.connected=false;emitState(room);}});
 });
 
 let last=Date.now();
 setInterval(()=>{
   const now=Date.now(),dt=Math.min(.05,(now-last)/1000);last=now;
-  for(const room of rooms.values()) if(room.status==="playing") { if(advance(room.game,now).finished) finish(room); else emitState(room); }
+  for(const room of rooms.values()) if(room.status==="playing") { if(tick(room.game,room.teams,dt,now).finished) finish(room); else emitState(room); }
 },100).unref();
 setInterval(()=>{for(const [code,room] of rooms)if(Date.now()-room.createdAt>3*60*60*1000)rooms.delete(code);},1800000).unref();
 
