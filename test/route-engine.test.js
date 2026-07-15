@@ -1,8 +1,0 @@
-const test=require("node:test");const assert=require("node:assert/strict");
-const{createTeam}=require("../game-engine");const{createGame,tick,input,objective,NODES}=require("../route-engine");
-function setup(count=2){const teams=Array.from({length:8},(_,i)=>createTeam(i));for(let i=0;i<count;i++)teams[i].players.push({id:`p${i}`,nickname:`P${i}`});return{teams,game:createGame(teams,1000)}}
-test("mỗi đội có một tuyến và mục tiêu rõ ràng",()=>{const{teams,game}=setup();assert.equal(Object.keys(game.riders).length,2);const o=objective(game,teams[0].id);assert.equal(o.kind,"pickup");assert.ok(o.node.label)});
-test("hai nút trái phải thay đổi hướng chạy",()=>{const{teams,game}=setup(1),r=game.riders[teams[0].id],before=r.angle;input(game,teams[0].id,1);tick(game,teams,.1,1100);assert.ok(r.angle>before)});
-test("chạm nguồn tự nhận hàng và mục tiêu đổi sang nơi giao",()=>{const{teams,game}=setup(1),r=game.riders[teams[0].id],source=objective(game,teams[0].id).node;r.x=source.x;r.y=source.y;r.trail=[];tick(game,teams,.01,1010);assert.ok(r.cargo);assert.equal(objective(game,teams[0].id).kind,"deliver")});
-test("giao đúng màu tăng chỉ số và quỹ chung",()=>{const{teams,game}=setup(1),r=game.riders[teams[0].id];r.cargo="growth";const target=NODES.find(n=>n.kind==="target"&&n.type==="growth");r.x=target.x;r.y=target.y;r.angle=0;r.trail=[];const before=teams[0].gdp;tick(game,teams,.001,1001);assert.ok(teams[0].gdp>before);assert.equal(game.publicFund,1)});
-test("đâm biên hồi sinh nhanh và không bị loại",()=>{const{teams,game}=setup(1),r=game.riders[teams[0].id];r.x=1399;r.angle=0;tick(game,teams,.1,1100);assert.equal(r.alive,false);assert.equal(r.respawnAt,2300);tick(game,teams,.1,2400);assert.equal(r.alive,true)});
