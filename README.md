@@ -1,23 +1,30 @@
-# Đường Đua Kinh Tế
+# Economic Shieldwall
 
-Game `.io` nguyên bản cho bài thuyết trình **Kinh tế thị trường định hướng XHCN ở Việt Nam**. Tối đa 8 người chơi realtime; host chiếu toàn bản đồ, mỗi điện thoại là một bộ điều khiển.
+Game web realtime lấy cảm hứng từ vòng lặp **chỉ huy đội quân – chiếm cứ điểm – giữ cân bằng** của Shieldwall, được thiết kế cho bài thuyết trình **Kinh tế thị trường định hướng XHCN ở Việt Nam**.
 
-## Trải nghiệm người chơi
+## Gameplay
 
-- Xe tự chạy; chỉ giữ **Trái** hoặc **Phải** để đổi hướng.
-- Mũi tên lớn luôn chỉ mục tiêu hiện tại.
-- Khi chưa có hàng: đi tới điểm nhận hàng đang phát sáng.
-- Khi có hàng: giao tới điểm cùng màu.
-- Va chạm với biên hoặc tuyến khác chỉ khiến hồi sinh sau 1,2 giây, không bị loại.
-- Trước trận có hướng dẫn trực quan ba bước, không cần đọc tài liệu.
+- Tối đa 8 người, tự chia xen kẽ thành hai phe.
+- Mỗi người điều khiển một chỉ huy và 5 NPC.
+- Di chuyển bằng WASD/D-pad.
+- Ba lệnh: **Theo tôi**, **Phòng thủ**, **Tấn công**.
+- NPC tự giữ đội hình, tìm mục tiêu và giao tranh.
+- Chỉ huy và NPC chết sẽ tái tập hợp tại căn cứ, không bị loại khỏi trận.
 
-Ba loại nhiệm vụ tạo ba chỉ số:
+Ba cứ điểm:
 
-- Sản xuất → GDP.
-- Thuốc và an sinh → phúc lợi.
-- Thiết bị hạ tầng → ổn định.
+- Khu sản xuất → GDP.
+- Khu phúc lợi → an sinh.
+- Khu điều tiết → ổn định.
 
-Mỗi lần giao hàng đóng góp vào quỹ chung. Quỹ đầy nâng cấp hạ tầng cho mọi đội. Cuối trận công bố GDP cao nhất và phát triển toàn diện nhất.
+Phe giữ cân bằng `GDP ≥ 40`, `An sinh ≥ 32`, `Ổn định ≥ 32` nhận điểm chiến thắng nhanh hơn. Khủng hoảng định kỳ phạt phe thiếu ổn định. Trận mặc định kéo dài 6 phút.
+
+## UX
+
+- Tutorial trực quan ba bước trước trận.
+- Mobile có D-pad lớn và ba nút lệnh cố định.
+- Màn hình player dùng camera bám chỉ huy.
+- Màn hình host hiển thị toàn chiến trường, tiến độ chiếm điểm và ba chỉ số của hai phe.
 
 ## Chạy local
 
@@ -27,7 +34,7 @@ npm test
 npm start
 ```
 
-Mở `http://localhost:3000`. Trận mặc định kéo dài 6 phút; đổi bằng biến `MATCH_SECONDS`.
+Mở `http://localhost:3000`. Có thể đổi thời lượng bằng `MATCH_SECONDS`.
 
 ## Deploy Render
 
