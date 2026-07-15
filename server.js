@@ -5,7 +5,7 @@ const http = require("node:http");
 const QRCode = require("qrcode");
 const { Server } = require("socket.io");
 const { createTeam, serializeTeam } = require("./game-engine");
-const { createGame, tick, setInput, setCommand, winner, factionFor } = require("./shield-engine");
+const { createGame, tick, setInput, setCommand, buy, winner } = require("./shield-engine");
 
 const PORT = Number(process.env.PORT || 3000);
 const app = express();
@@ -45,8 +45,7 @@ function emitState(room) {
 function finish(room) {
   room.status = "finished";
   const teams = activeTeams(room);
-  const winningFaction = winner(room.game);
-  room.champions = { faction: winningFaction };
+  room.champions = { teamId: winner(room.game) };
   emitState(room);
 }
 function start(room) {
@@ -96,6 +95,7 @@ io.on("connection", socket => {
   });
   socket.on("player:input", ({code,playerToken,x,y}={}) => { const room=rooms.get(String(code||"").toUpperCase()); const player=room&&findPlayer(room,playerToken); if(room?.status==="playing"&&player)setInput(room.game,player.teamId,x,y); });
   socket.on("player:command", ({code,playerToken,command}={},cb=()=>{}) => { const room=rooms.get(String(code||"").toUpperCase()); const player=room&&findPlayer(room,playerToken); if(room?.status!=="playing"||!player)return cb({ok:false});cb({ok:setCommand(room.game,player.teamId,command)});emitState(room); });
+  socket.on("player:buy", ({code,playerToken,item}={},cb=()=>{}) => { const room=rooms.get(String(code||"").toUpperCase()); const player=room&&findPlayer(room,playerToken); if(room?.status!=="playing"||!player)return cb({ok:false,message:"Trận chưa bắt đầu"});const result=buy(room.game,player.teamId,item);cb(result);emitState(room); });
   socket.on("disconnect",()=>{const id=socket.data.player;const room=id&&rooms.get(id.roomCode);const player=room?.players.get(id.playerId);if(player){player.connected=false;emitState(room);}});
 });
 
