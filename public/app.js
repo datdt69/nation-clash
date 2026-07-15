@@ -158,25 +158,11 @@ function renderLanding() {
           </section>
           <section class="panel entry-card">
             <h2>Tham gia trận đấu</h2>
-            <p>Mỗi nhóm cử đúng một đại diện, nhập mã phòng rồi chọn đội của mình.</p>
+            <p>Mỗi nhóm cử đúng một đại diện. Ai vào trước được xếp vào đội có số thứ tự trước.</p>
             <form id="join-form">
               <div class="field">
                 <label for="room-code">Mã phòng</label>
                 <input id="room-code" class="code-input" maxlength="5" autocomplete="off" value="${escapeHtml(roomFromUrl)}" placeholder="VD: 7KX2P" required />
-              </div>
-              <div class="field">
-                <label for="team-number">Đội đại diện</label>
-                <select id="team-number" required>
-                  <option value="">Chọn đội</option>
-                  <option value="1">Đội 1 — Rồng Việt</option>
-                  <option value="2">Đội 2 — Sao Vàng</option>
-                  <option value="3">Đội 3 — Tre Xanh</option>
-                  <option value="4">Đội 4 — Mê Kông</option>
-                  <option value="5">Đội 5 — Đông Sơn</option>
-                  <option value="6">Đội 6 — Biển Đông</option>
-                  <option value="7">Đội 7 — Trường Sơn</option>
-                  <option value="8">Đội 8 — Sen Việt</option>
-                </select>
               </div>
               <div class="field">
                 <label for="nickname">Tên người đại diện</label>
@@ -237,7 +223,7 @@ function renderHostLobby() {
               <h2>${roomState.playersCount}/8 đại diện đã vào</h2>
               <p>Mỗi nhóm thảo luận trực tiếp và cử một người bấm quyết định.</p>
             </div>
-            <button class="btn btn-primary" data-action="start-game" ${roomState.playersCount < 2 ? "disabled" : ""}>Bắt đầu trận đấu</button>
+            <button class="btn btn-primary" data-action="start-game" ${roomState.playersCount < 1 ? "disabled" : ""}>Bắt đầu trận đấu</button>
           </div>
           <div class="team-grid">${teamLobbyCards()}</div>
         </section>
@@ -503,18 +489,17 @@ function createRoom() {
   });
 }
 
-function joinRoom(code, nickname, teamNumber) {
+function joinRoom(code, nickname) {
   const existingToken =
     playerSession?.code === code.toUpperCase() ? playerSession.playerToken : null;
   socket.emit(
     "player:join",
-    { code, nickname, teamNumber, playerToken: existingToken },
+    { code, nickname, playerToken: existingToken },
     (response) => {
       if (!response.ok) return showToast(response.message);
       playerSession = {
         code: code.toUpperCase(),
         nickname,
-        teamNumber,
         playerToken: response.playerToken,
         playerId: response.playerId,
         teamId: response.teamId,
@@ -529,9 +514,8 @@ app.addEventListener("submit", (event) => {
   if (event.target.id !== "join-form") return;
   event.preventDefault();
   const code = document.querySelector("#room-code").value.trim();
-  const teamNumber = document.querySelector("#team-number").value;
   const nickname = document.querySelector("#nickname").value.trim();
-  joinRoom(code, nickname, teamNumber);
+  joinRoom(code, nickname);
 });
 
 app.addEventListener("click", async (event) => {
@@ -616,7 +600,6 @@ socket.on("connect", () => {
       {
         code: playerSession.code,
         nickname: playerSession.nickname,
-        teamNumber: playerSession.teamNumber,
         playerToken: playerSession.playerToken,
       },
       (response) => {
