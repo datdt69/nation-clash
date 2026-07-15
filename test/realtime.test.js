@@ -26,25 +26,23 @@ function waitForState(socket, predicate, timeout = 3000) {
   });
 }
 
-test("host tạo phòng, hai người join và bắt đầu realtime", async (t) => {
+test("host tạo phòng và bắt đầu realtime chỉ với một đại diện", async (t) => {
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   const port = server.address().port;
   const url = `http://127.0.0.1:${port}`;
   const host = createClient(url, { transports: ["websocket"] });
   const p1 = createClient(url, { transports: ["websocket"] });
-  const p2 = createClient(url, { transports: ["websocket"] });
 
   t.after(async () => {
     for (const room of rooms.values()) clearTimeout(room.timer);
     host.close();
     p1.close();
-    p2.close();
     rooms.clear();
     await new Promise((resolve) => server.close(resolve));
   });
 
   await Promise.all(
-    [host, p1, p2].map(
+    [host, p1].map(
       (socket) =>
         new Promise((resolve) =>
           socket.connected ? resolve() : socket.once("connect", resolve),
@@ -59,15 +57,8 @@ test("host tạo phòng, hai người join và bắt đầu realtime", async (t)
   const joined1 = await emitAck(p1, "player:join", {
     code: created.code,
     nickname: "An",
-    teamNumber: 1,
-  });
-  const joined2 = await emitAck(p2, "player:join", {
-    code: created.code,
-    nickname: "Bình",
-    teamNumber: 2,
   });
   assert.equal(joined1.ok, true);
-  assert.equal(joined2.ok, true);
 
   const playingState = waitForState(p1, (state) => state.phase === "policy");
   const started = await emitAck(host, "host:start", {
@@ -76,7 +67,7 @@ test("host tạo phòng, hai người join và bắt đầu realtime", async (t)
   });
   assert.equal(started.ok, true);
   const state = await playingState;
-  assert.equal(state.playersCount, 2);
+  assert.equal(state.playersCount, 1);
   assert.equal(state.event.id, "consumer-boom");
 });
 
@@ -111,7 +102,6 @@ test("phòng nhận đủ 8 đại diện, mỗi đội một người và chặ
       emitAck(client, "player:join", {
         code: created.code,
         nickname: `Người ${index + 1}`,
-        teamNumber: index + 1,
       }),
     ),
   );
@@ -127,7 +117,6 @@ test("phòng nhận đủ 8 đại diện, mỗi đội một người và chặ
   const overflow = await emitAck(clients[8], "player:join", {
     code: created.code,
     nickname: "Người 9",
-    teamNumber: 1,
   });
   assert.equal(overflow.ok, false);
   assert.match(overflow.message, /đủ 8/i);
