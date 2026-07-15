@@ -1,6 +1,6 @@
 # Nation Clash
 
-Web game realtime cho lớp học khoảng 50 người, chia thành 8 nhóm và cử 8 đại diện, thời lượng một ván 12–15 phút. Host tạo phòng và chiếu mã QR; mỗi đại diện chọn đúng đội của mình rồi điều khiển quyết định trên điện thoại sau khi thảo luận với nhóm.
+Web game realtime cho lớp học khoảng 50 người, chia thành tối đa 8 nhóm và cử đại diện, thời lượng một ván 12–15 phút. Host tạo phòng và chiếu mã QR; đại diện chỉ cần nhập tên. Người vào trước được tự động xếp vào đội có số thứ tự trước. Host có thể bắt đầu từ một đội trở lên.
 
 ## Gameplay
 
