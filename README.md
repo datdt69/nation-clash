@@ -1,60 +1,35 @@
-# Nation Clash
+# Vietnam 2045 – Realtime Economic Arena
 
-Web game realtime cho lớp học khoảng 50 người, chia thành tối đa 8 nhóm và cử đại diện, thời lượng một ván 12–15 phút. Host tạo phòng và chiếu mã QR; đại diện chỉ cần nhập tên. Người vào trước được tự động xếp vào đội có số thứ tự trước. Host có thể bắt đầu từ một đội trở lên.
+Game multiplayer cho phần thuyết trình **Kinh tế thị trường định hướng XHCN ở Việt Nam**. Tối đa 8 nhóm, mỗi nhóm cử một đại diện. Host tạo phòng, chiếu QR và bản đồ lên màn hình lớp.
 
 ## Gameplay
 
-Mỗi ván có 6 biến cố kinh tế. Trong từng vòng:
+- WASD/phím mũi tên hoặc joystick điện thoại để di chuyển.
+- Thu thập **vốn**, **lao động**, **công nghệ** và mang về căn cứ.
+- Nhấn `Space`/nút **HÚC** để dash, làm đối thủ rơi một phần hàng.
+- Đứng trong khu sản xuất, hợp tác xã hoặc trung tâm đổi mới để chiếm quyền kiểm soát.
+- Mỗi lần giao hàng đóng góp vào quỹ chung; đủ quỹ sẽ tự động xây hạ tầng và tăng chỉ số cho mọi đội.
+- Cú sốc chuỗi cung ứng trừng phạt nền kinh tế thiếu ổn định.
+- Hai bảng thắng: GDP cao nhất và phát triển toàn diện nhất.
 
-1. Thành viên bỏ phiếu chọn một trong bốn chính sách: tăng trưởng, an sinh, hạ tầng hoặc đầu cơ.
-2. Mỗi đội được ghép với một đối thủ và bí mật chọn **Bắt tay** hoặc **Chơi rắn**.
-3. Server tính GDP, an sinh, ổn định và công bố bảng xếp hạng realtime.
+Trận mặc định kéo dài 7 phút. Có thể đặt biến môi trường `MATCH_SECONDS` để đổi thời lượng.
 
-Game trao hai danh hiệu cuối trận:
-
-- Quán quân tăng trưởng: GDP cao nhất.
-- Quán quân phát triển toàn diện: `45% GDP + 30% an sinh + 25% ổn định`.
-
-Sự khác nhau giữa hai kết quả là điểm chốt để dẫn vào phần kinh tế thị trường định hướng XHCN.
-
-## Chạy trên máy
-
-Yêu cầu Node.js 20 trở lên.
+## Chạy local
 
 ```bash
-npm install
+npm ci
 npm test
 npm start
 ```
 
-Mở `http://localhost:3000`. Nếu muốn điện thoại cùng Wi-Fi truy cập, mở bằng IP LAN của máy host, ví dụ `http://192.168.1.10:3000`, và cho phép cổng 3000 qua firewall.
+Mở `http://localhost:3000`.
 
-## Đưa lên Internet
+## Deploy Render
 
-Ứng dụng là một Node.js server dùng Socket.IO, không cần database. Có thể deploy trực tiếp lên Render, Railway, Fly.io hoặc nền tảng hỗ trợ WebSocket khác.
-
-Thiết lập tối thiểu:
+Repo có sẵn `render.yaml`. Dùng Blueprint của Render hoặc tạo Web Service với:
 
 - Build command: `npm ci`
 - Start command: `npm start`
 - Health check: `/health`
-- Biến môi trường: `NODE_ENV=production`
 
-Repository có sẵn `Dockerfile` và `render.yaml`. Phòng chỉ được giữ trong bộ nhớ và tự xóa sau 3 giờ; khi server khởi động lại, các phòng đang chạy sẽ mất.
-
-## Điều chỉnh thời gian
-
-Mặc định mỗi vòng gồm 32 giây chọn chính sách, 24 giây đối đầu và 14 giây xem kết quả. Có thể đổi bằng biến môi trường:
-
-```bash
-POLICY_SECONDS=25
-DUEL_SECONDS=18
-REVEAL_SECONDS=10
-```
-
-## Kiểm tra trước khi lên lớp
-
-1. Tạo phòng bằng laptop sẽ dùng để trình chiếu.
-2. Cho 5–10 điện thoại thử vào bằng QR.
-3. Chạy hết một ván và kiểm tra mạng Wi-Fi tại lớp.
-4. Khi tổ chức chính thức, host có nút bỏ qua thời gian và kết thúc trận nếu cần.
+Socket.IO cần một tiến trình server chạy liên tục; không deploy game này như static site.
