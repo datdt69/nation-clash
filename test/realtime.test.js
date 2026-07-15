@@ -34,7 +34,6 @@ test("host tạo phòng và bắt đầu realtime chỉ với một đại diệ
   const p1 = createClient(url, { transports: ["websocket"] });
 
   t.after(async () => {
-    for (const room of rooms.values()) clearTimeout(room.timer);
     host.close();
     p1.close();
     rooms.clear();
@@ -60,7 +59,7 @@ test("host tạo phòng và bắt đầu realtime chỉ với một đại diệ
   });
   assert.equal(joined1.ok, true);
 
-  const playingState = waitForState(p1, (state) => state.phase === "policy");
+  const playingState = waitForState(p1, (state) => state.status === "playing");
   const started = await emitAck(host, "host:start", {
     code: created.code,
     hostToken: created.hostToken,
@@ -68,7 +67,9 @@ test("host tạo phòng và bắt đầu realtime chỉ với một đại diệ
   assert.equal(started.ok, true);
   const state = await playingState;
   assert.equal(state.playersCount, 1);
-  assert.equal(state.event.id, "consumer-boom");
+  assert.ok(state.arena);
+  assert.equal(Object.keys(state.arena.players).length, 1);
+  assert.equal(state.arena.zones.length, 4);
 });
 
 test("phòng nhận đủ 8 đại diện, mỗi đội một người và chặn người thứ 9", async (t) => {
