@@ -1,18 +1,17 @@
-# Vietnam 2045 – Realtime Economic Arena
+# Xây Việt Nam 2045
 
-Game multiplayer cho phần thuyết trình **Kinh tế thị trường định hướng XHCN ở Việt Nam**. Tối đa 8 nhóm, mỗi nhóm cử một đại diện. Host tạo phòng, chiếu QR và bản đồ lên màn hình lớp.
+Game Stack realtime một chạm cho bài thuyết trình **Kinh tế thị trường định hướng XHCN ở Việt Nam**. Tối đa 8 nhóm, mỗi nhóm cử một đại diện. Người chơi không cần biết kiến thức trước khi vào game.
 
-## Gameplay
+## Luật chơi
 
-- WASD/phím mũi tên hoặc joystick điện thoại để di chuyển.
-- Thu thập **vốn**, **lao động**, **công nghệ** và mang về căn cứ.
-- Nhấn `Space`/nút **HÚC** để dash, làm đối thủ rơi một phần hàng.
-- Đứng trong khu sản xuất, hợp tác xã hoặc trung tâm đổi mới để chiếm quyền kiểm soát.
-- Mỗi lần giao hàng đóng góp vào quỹ chung; đủ quỹ sẽ tự động xây hạ tầng và tăng chỉ số cho mọi đội.
-- Cú sốc chuỗi cung ứng trừng phạt nền kinh tế thiếu ổn định.
-- Hai bảng thắng: GDP cao nhất và phát triển toàn diện nhất.
+Khối chạy ngang. Chạm màn hình hoặc nhấn `Space` để thả. Phần đặt lệch bị cắt; đặt càng chuẩn thì công trình càng dễ xây cao.
 
-Trận mặc định kéo dài 7 phút. Có thể đặt biến môi trường `MATCH_SECONDS` để đổi thời lượng.
+Các khối đại diện cho sản xuất, thị trường, phúc lợi, hạ tầng công và ổn định. Mỗi phút có một biến cố. Công trình có GDP cao nhưng phúc lợi hoặc ổn định quá thấp sẽ mất tầng. Cuối trận công bố hai đội:
+
+- Tăng trưởng cao nhất.
+- Phát triển toàn diện nhất.
+
+Trận mặc định kéo dài 6 phút. Đặt biến môi trường `MATCH_SECONDS` để thay đổi.
 
 ## Chạy local
 
@@ -22,14 +21,12 @@ npm test
 npm start
 ```
 
-Mở `http://localhost:3000`.
+Mở `http://localhost:3000`. Host tạo phòng và chiếu QR; người vào trước tự nhận đội trước.
 
 ## Deploy Render
 
-Repo có sẵn `render.yaml`. Dùng Blueprint của Render hoặc tạo Web Service với:
+Repo có sẵn `render.yaml`:
 
-- Build command: `npm ci`
-- Start command: `npm start`
+- Build: `npm ci`
+- Start: `npm start`
 - Health check: `/health`
-
-Socket.IO cần một tiến trình server chạy liên tục; không deploy game này như static site.
