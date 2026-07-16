@@ -435,7 +435,14 @@ function patchTrading(previousGame) {
     const ranking = document.querySelector(".leaderboard-panel");
     if (ranking) ranking.outerHTML = leaderboardPanel();
   } else {
-    patchOrderTicket();
+    const previousPositions = previousGame?.portfolio?.positions?.map((position) => position.symbol).join(",") || "";
+    const nextPositions = state.game.portfolio?.positions?.map((position) => position.symbol).join(",") || "";
+    if (previousPositions !== nextPositions) {
+      const ticket = document.querySelector(".order-ticket");
+      if (ticket) ticket.outerHTML = orderTicket();
+    } else {
+      patchOrderTicket();
+    }
   }
   if (
     previousGame?.eventRound !== state.game.eventRound
