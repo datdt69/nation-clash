@@ -38,7 +38,7 @@ function roomCode() {
   return code;
 }
 
-function roomState(room, viewerTeamId = null) {
+function roomState(room, viewerPlayerId = null) {
   return {
     code: room.code,
     status: room.status,
@@ -47,17 +47,15 @@ function roomState(room, viewerTeamId = null) {
     maxPlayersPerTeam: MAX_PLAYERS_PER_TEAM,
     serverNow: Date.now(),
     teams: room.teams.map(serializeTeam),
-    game: room.game ? publicState(room.game, viewerTeamId) : null,
+    game: room.game ? publicState(room.game, viewerPlayerId) : null,
     champions: room.champions,
   };
 }
 
 function emitState(room) {
   io.to(`${room.code}:host`).emit("state", roomState(room));
-  for (const team of room.teams) {
-    if (team.players.some((player) => player.connected)) {
-      io.to(`${room.code}:team:${team.id}`).emit("state", roomState(room, team.id));
-    }
+  for (const player of room.players.values()) {
+    if (player.connected) io.to(`${room.code}:player:${player.id}`).emit("state", roomState(room, player.id));
   }
 }
 
@@ -69,11 +67,16 @@ function finish(room) {
   emitState(room);
 }
 
-function start(room) {
+function start(room, options = {}) {
   if (room.players.size < 1) throw new Error("Cần ít nhất 1 người để mở thị trường");
+  const durationMinutes = Math.max(10, Math.min(30, Number(options.durationMinutes) || 10));
+  const eventMinutes = Math.max(1, Math.min(5, Number(options.eventMinutes) || 2));
   room.status = "playing";
   room.champions = null;
-  room.game = createGame(room.teams);
+  room.game = createGame(room.teams, {
+    durationMs: durationMinutes * 60_000,
+    eventIntervalMs: eventMinutes * 60_000,
+  });
   emitState(room);
 }
 
@@ -118,12 +121,12 @@ io.on("connection", (socket) => {
     emitState(room);
   });
 
-  socket.on("host:start", ({ code, hostToken } = {}, callback = () => {}) => {
+  socket.on("host:start", ({ code, hostToken, durationMinutes, eventMinutes } = {}, callback = () => {}) => {
     const room = rooms.get(String(code || "").toUpperCase());
     if (!room || room.hostToken !== hostToken) return callback({ ok: false, message: "Không có quyền điều khiển phòng" });
     if (room.status !== "lobby") return callback({ ok: false, message: "Phòng không còn ở trạng thái chờ" });
     try {
-      start(room);
+      start(room, { durationMinutes, eventMinutes });
       callback({ ok: true });
     } catch (error) {
       callback({ ok: false, message: error.message });
@@ -170,7 +173,7 @@ io.on("connection", (socket) => {
 
     socket.data.player = { roomCode: room.code, playerId: player.id };
     socket.join(`${room.code}:players`);
-    socket.join(`${room.code}:team:${player.teamId}`);
+    socket.join(`${room.code}:player:${player.id}`);
     callback({ ok: true, playerToken: player.token, playerId: player.id, teamId: player.teamId });
     emitState(room);
   });
@@ -179,7 +182,7 @@ io.on("connection", (socket) => {
     const room = rooms.get(String(code || "").toUpperCase());
     const player = room && findPlayer(room, playerToken);
     if (!room || room.status !== "playing" || !player) return callback({ ok: false, message: "Tài khoản giao dịch không hợp lệ" });
-    const result = trade(room.game, player.teamId, { symbol, side, quantity });
+    const result = trade(room.game, player.id, { symbol, side, quantity });
     callback(result);
     if (result.ok) emitState(room);
   });
