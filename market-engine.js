@@ -497,7 +497,7 @@ function publicState(game, viewerTeamId = null) {
     startingCash: STARTING_CASH,
     feeRate: TRADING_FEE_RATE,
     markets: game.markets.map(publicMarket),
-    activeEvents: game.activeEvents.map(({ analysis, ...event }) => event),
+    activeEvents: game.activeEvents.map(({ analysis, affected, ...event }) => event),
     eventHistory: game.eventHistory,
     tradeTape: game.tradeTape,
     leaderboard: game.phase === "finished" && game.rankings.length ? game.rankings : leaderboard(game),
