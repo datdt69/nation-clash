@@ -6,12 +6,13 @@ Game bluff realtime cho lớp học, lấy cảm hứng từ Liar's Bar và minh
 
 - Host mở phòng trên laptop và chiếu bàn chơi lên máy chiếu.
 - 2–8 đội tham gia bằng điện thoại; mỗi đội chỉ thấy bài riêng của mình.
-- Bộ bài mỗi vòng có đúng 40 lá; đủ 8 đội thì mỗi đội nhận 5 lá và không còn lá thừa.
+- Toàn trận dùng đúng 40 lá; đủ 8 đội thì mỗi đội nhận 5 lá và không còn lá thừa.
 - Các đội có vị trí cố định quanh bàn và đánh theo chiều kim đồng hồ.
 - Mỗi vòng công bố một mục tiêu: Tăng trưởng, An sinh hoặc Điều tiết.
 - Đội đến lượt úp 1–3 lá và tự động tuyên bố tất cả thuộc mục tiêu vòng.
 - Đội kế tiếp tố “Nói dối” hoặc chọn bài để đánh tiếp.
-- Sau 8 vòng, hệ thống tính điểm theo chế độ host đã chọn.
+- Mục tiêu là đánh hết bài. Lá cuối chỉ được xác nhận nếu đội kế tiếp không tố hoặc tố sai.
+- Trận kết thúc khi mọi đội về đích; hệ thống xếp hạng và đánh dấu 4 đội tổng điểm cao nhất.
 
 ## Cấu trúc bộ bài cố định
 
@@ -22,10 +23,14 @@ Game bluff realtime cho lớp học, lấy cảm hứng từ Liar's Bar và minh
 
 Vì mỗi mục tiêu chỉ có tối đa 16 lá hợp lệ nếu tính cả Cân bằng, người chơi có thể dựa vào bài trên tay và tổng số lá đã được tuyên bố để phát hiện bluff.
 
-## Hai chế độ
+## Chỉ số và xếp hạng
 
-- **Thị trường TBCN:** GDP và ngân sách có trọng số quyết định.
-- **Định hướng XHCN:** GDP, ngân sách, an sinh và ổn định cùng được tính; chênh lệch lớn bị trừ điểm.
+- Mỗi đội bắt đầu với 100 GDP, 100 Ngân sách, 100 An sinh và 100 Ổn định.
+- Lá bài không làm thay đổi chỉ số.
+- Nói dối bị bắt hoặc tố sai sẽ nhận một khủng hoảng ngẫu nhiên và bị trừ chỉ số.
+- Nếu nói dối ở lượt cuối bị bắt, các lá vừa đánh quay lại tay và đội đó chưa về đích.
+- Hạng 1 được cộng 25 mỗi chỉ số; hạng 2 cộng 18; hạng 3 cộng 12; hạng 4 cộng 7.
+- Tổng điểm = GDP + Ngân sách + An sinh + Ổn định. Bốn tổng điểm cao nhất là TOP 4.
 
 ## Chạy local
 
