@@ -242,7 +242,7 @@ function chartSvg(market) {
     const closeY = y(candle.close);
     const rising = candle.close >= candle.open;
     const color = rising ? "#58e08f" : "#ff6b76";
-    return `<g class="candle ${rising ? "up" : "down"}"><line class="candle-wick" x1="${center}" y1="${y(candle.high)}" x2="${center}" y2="${y(candle.low)}" stroke="${color}"></line><rect class="candle-body" x="${center - candleWidth / 2}" y="${Math.min(openY, closeY)}" width="${candleWidth}" height="${Math.max(2.5, Math.abs(closeY - openY))}" rx="1.5" fill="${rising ? "#102b1d" : color}" stroke="${color}"></rect></g>`;
+    return `<g class="candle ${rising ? "up" : "down"}"><line class="candle-wick" x1="${center}" y1="${y(candle.high)}" x2="${center}" y2="${y(candle.low)}" stroke="${color}"></line><rect class="candle-body" x="${center - candleWidth / 2}" y="${Math.min(openY, closeY)}" width="${candleWidth}" height="${Math.max(2.5, Math.abs(closeY - openY))}" rx="1.5" fill="${color}" stroke="${color}"></rect></g>`;
   }).join("");
   const lines = Array.from({ length: 5 }, (_, index) => {
     const ratio = index / 4;
