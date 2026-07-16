@@ -70,8 +70,7 @@ test("đúng phút thứ nhất sinh 1-3 sự kiện và giấu hệ số tác �
   assert.equal(result.changed, true);
   assert.equal(state.eventRound, 1);
   assert.equal(state.activeEvents.length, 1);
-  assert.ok(state.activeEvents[0].affected.length >= 1);
-  assert.ok(state.activeEvents[0].affected.every((impact) => impact.sector && impact.country && impact.label));
+  assert.equal(state.activeEvents[0].affected, undefined);
   assert.equal(state.activeEvents[0].effects, undefined);
   assert.equal(state.activeEvents[0].analysis, undefined);
 });
