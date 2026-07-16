@@ -63,7 +63,7 @@ test("benchmark 55 người kết nối, vào 8 đội và nhận state realtime
   const readyAt = performance.now();
 
   assert.equal(states.length, 55);
-  assert.ok(states.every((state) => state.playersCount === 55 && state.game.markets.length === 8));
+  assert.ok(states.every((state) => state.playersCount === 55 && state.game.markets.length === 12));
   assert.ok(readyAt - startedAt < 15_000);
   t.diagnostic(`55 kết nối: ${Math.round(connectedAt - startedAt)}ms; vào đội: ${Math.round(joinedAt - connectedAt)}ms; phát state mở sàn: ${Math.round(readyAt - joinedAt)}ms`);
 });
