@@ -62,7 +62,7 @@ test("host tạo phòng, hai đội vào và giao dịch realtime", async (t) =>
   const started = await emitAck(host, "host:start", { code: created.code, hostToken: created.hostToken });
   assert.equal(started.ok, true);
   const [firstState, secondState] = await Promise.all([firstPlaying, secondPlaying]);
-  assert.equal(firstState.game.markets.length, 8);
+  assert.equal(firstState.game.markets.length, 12);
   assert.equal(firstState.game.portfolio.teamId, joinedFirst.teamId);
   assert.equal(secondState.game.portfolio.teamId, joinedSecond.teamId);
 
