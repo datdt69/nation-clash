@@ -241,7 +241,7 @@ function chartSvg(market) {
   const slotWidth = plotWidth / Math.max(1, candles.length);
   const x = (index) => left + slotWidth * index + slotWidth / 2;
   const y = (price) => top + ((maximum - price) / range) * (height - top - bottom);
-  const candleWidth = Math.max(4, Math.min(18, slotWidth * 0.62));
+  const candleWidth = Math.max(5, Math.min(22, slotWidth * 0.82));
   const candleShapes = candles.map((candle, index) => {
     const center = x(index);
     const openY = y(candle.open);
