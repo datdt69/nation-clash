@@ -5,6 +5,7 @@ Game bluff realtime cho lớp học, lấy cảm hứng từ Liar's Bar và minh
 ## Cách tổ chức
 
 - Host mở phòng trên laptop và chiếu bàn chơi lên máy chiếu.
+- Màn host có chế độ toàn màn hình; số lá còn lại được hiển thị cỡ lớn trên từng ghế để quan sát từ xa.
 - 2–8 đội tham gia bằng điện thoại; mỗi đội chỉ thấy bài riêng của mình.
 - Toàn trận dùng đúng 40 lá; đủ 8 đội thì mỗi đội nhận 5 lá và không còn lá thừa.
 - Các đội có vị trí cố định quanh bàn và đánh theo chiều kim đồng hồ.
@@ -13,6 +14,7 @@ Game bluff realtime cho lớp học, lấy cảm hứng từ Liar's Bar và minh
 - Đội kế tiếp tố “Nói dối” hoặc chọn bài để đánh tiếp.
 - Mục tiêu là đánh hết bài. Lá cuối chỉ được xác nhận nếu đội kế tiếp không tố hoặc tố sai.
 - Trận kết thúc khi mọi đội về đích; hệ thống xếp hạng và đánh dấu 4 đội tổng điểm cao nhất.
+- Sau bảng tổng kết có nút **Về trang chủ** để xóa phiên cũ và tạo trận mới.
 
 ## Cấu trúc bộ bài cố định
 
