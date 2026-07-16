@@ -348,6 +348,71 @@ function finishScreen() {
   </main>`;
 }
 
+function patchQuotes() {
+  for (const market of state.game.markets) {
+    const quote = document.querySelector(`.quote-card[data-symbol="${market.symbol}"]`);
+    if (!quote) continue;
+    quote.classList.toggle("selected", market.symbol === selectedSymbol);
+    const price = quote.querySelector(".quote-price");
+    const change = quote.querySelector(".quote-values small");
+    if (price) price.textContent = formatPrice(market.price);
+    if (change) {
+      change.textContent = formatSigned(market.changePct, "%");
+      change.classList.toggle("down", market.changePct < 0);
+    }
+  }
+}
+
+function patchOrderTicket() {
+  const portfolio = state.game.portfolio;
+  if (!portfolio) return;
+  const market = marketBySymbol();
+  const boardEntry = state.game.leaderboard.find((entry) => entry.teamId === portfolio.teamId);
+  const profit = boardEntry?.profit || 0;
+  const stats = document.querySelectorAll(".portfolio-stat b");
+  if (stats.length === 3) {
+    stats[0].textContent = formatMoney(portfolio.netWorth);
+    stats[1].textContent = formatMoney(portfolio.cash);
+    stats[2].textContent = formatSigned(profit, " đ");
+    stats[2].classList.toggle("down", profit < 0);
+    stats[2].classList.toggle("up", profit >= 0);
+  }
+  const symbol = document.querySelector(".order-symbol-row b");
+  const holding = document.querySelector(".order-symbol-row small");
+  if (symbol) symbol.textContent = `${market.flag} ${market.symbol} · ${formatPrice(market.price)}`;
+  if (holding) holding.textContent = `Đang có: ${integerFormat.format(portfolio.holdings[market.symbol] || 0)}`;
+  const estimate = document.querySelector("[data-order-estimate]");
+  if (estimate) estimate.textContent = formatMoney(orderEstimate());
+  const submit = document.querySelector('[data-act="trade"]');
+  const quantity = Number(orderQuantity) || 0;
+  if (submit) {
+    submit.disabled = quantity < 1 || quantity > maxOrderQuantity() || tradePending;
+    submit.textContent = tradePending
+      ? "ĐANG KHỚP LỆNH..."
+      : `${orderSide === "buy" ? "MUA" : "BÁN"} ${quantity > 0 ? integerFormat.format(quantity) : 0} ${selectedSymbol}`;
+  }
+}
+
+function patchTrading(previousGame) {
+  const chart = document.querySelector(".chart-panel");
+  if (!chart) return render();
+  chart.outerHTML = chartPanel();
+  patchQuotes();
+  if (view === "host") {
+    const ranking = document.querySelector(".leaderboard-panel");
+    if (ranking) ranking.outerHTML = leaderboardPanel();
+  } else {
+    patchOrderTicket();
+  }
+  if (
+    previousGame?.eventRound !== state.game.eventRound
+    || previousGame?.activeEvents?.length !== state.game.activeEvents.length
+  ) {
+    const events = document.querySelector(".event-strip");
+    if (events) events.outerHTML = eventStrip();
+  }
+}
+
 function render() {
   cancelAnimationFrame(clockFrame);
   const active = document.activeElement;
@@ -528,12 +593,17 @@ app.addEventListener("click", async (event) => {
 });
 
 socket.on("state", (nextState) => {
+  const previousState = state;
+  const canPatch = previousState?.status === "playing"
+    && nextState.status === "playing"
+    && Boolean(document.querySelector(".trading-screen"));
   state = nextState;
   serverOffset = Number(nextState.serverNow || Date.now()) - Date.now();
   if (state.game && !state.game.markets.some((market) => market.symbol === selectedSymbol)) {
     selectedSymbol = state.game.markets[0]?.symbol || "VNX";
   }
-  render();
+  if (canPatch) patchTrading(previousState.game);
+  else render();
 });
 
 socket.on("connect", () => {
