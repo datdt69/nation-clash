@@ -317,14 +317,16 @@ select:focus-visible {
 .landing-copy h1 {
   max-width: 890px;
   margin: 18px 0 22px;
-  font-size: clamp(3.1rem, 6.9vw, 7.6rem);
-  line-height: 0.88;
-  letter-spacing: -0.072em;
+  font-size: clamp(3.1rem, 6.2vw, 6.8rem);
+  line-height: 1;
+  letter-spacing: -0.058em;
   text-transform: uppercase;
 }
 
 .landing-copy h1 span {
+  display: inline-block;
   color: var(--green);
+  white-space: nowrap;
 }
 
 .landing-copy > p:last-child {
@@ -1902,6 +1904,7 @@ select:focus-visible {
 
 @media (max-width: 1050px) {
   .landing-screen { grid-template-columns: minmax(0, 1fr) 390px; gap: 28px; }
+  .landing-copy h1 { font-size: clamp(3rem, 5.5vw, 4rem); }
   .ticker-cloud { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ticker-demo:nth-child(n + 5) { display: none; }
   .lobby-main { grid-template-columns: 1fr 1fr; }
@@ -1926,7 +1929,7 @@ select:focus-visible {
 
   .landing-topline .live-chip { display: none; }
   .landing-copy { padding: 54px 0 18px; }
-  .landing-copy h1 { font-size: clamp(3.2rem, 17vw, 6rem); }
+  .landing-copy h1 { font-size: clamp(2.55rem, 11.8vw, 4.8rem); line-height: 1.02; letter-spacing: -0.05em; }
   .landing-copy > p:last-child { font-size: 0.95rem; }
   .ticker-cloud { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ticker-demo:nth-child(n + 5) { display: none; }
@@ -2065,7 +2068,7 @@ select:focus-visible {
 }
 
 @media (max-width: 430px) {
-  .landing-copy h1 { font-size: clamp(3rem, 16vw, 4.4rem); }
+  .landing-copy h1 { font-size: clamp(2.45rem, 11.5vw, 3.1rem); }
   .ticker-cloud { grid-template-columns: 1fr 1fr; }
   .ticker-demo { padding: 10px; }
   .entry-card { padding: 22px 17px; }
