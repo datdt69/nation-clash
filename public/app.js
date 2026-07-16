@@ -35,7 +35,7 @@ let tradePending = false;
 let clockFrame = 0;
 let serverOffset = 0;
 let hostGameMinutes = 10;
-let hostEventMinutes = 1;
+let hostEventMinutes = 1.5;
 
 function brand() {
   return `<button class="brand" type="button" data-act="home" aria-label="Về trang chủ" title="Về trang chủ">
@@ -168,10 +168,10 @@ function hostLobby() {
       </div>
     </section>
     <footer class="lobby-footer">
-      <div class="lobby-rules"><span><b>01</b> Mỗi người có 100.000đ</span><span><b>02</b> Event kéo dài ${hostEventMinutes} phút</span><span><b>03</b> Xếp hạng theo TB đội</span></div>
+      <div class="lobby-rules"><span><b>01</b> Mỗi người có 100.000đ</span><span><b>02</b> Tin mới mỗi ${String(hostEventMinutes).replace(".", ",")} phút</span><span><b>03</b> Xếp hạng theo TB đội</span></div>
       <div class="host-time-settings">
         <label><span>◷ Thị trường</span><select id="host-game-minutes" aria-label="Thời lượng thị trường">${[10, 15, 20, 25, 30].map((minutes) => `<option value="${minutes}" ${minutes === hostGameMinutes ? "selected" : ""}>${minutes} phút</option>`).join("")}</select></label>
-        <label><span>⚡ Chu kỳ tin</span><select id="host-event-minutes" aria-label="Chu kỳ sự kiện">${[1, 2, 3, 4, 5].map((minutes) => `<option value="${minutes}" ${minutes === hostEventMinutes ? "selected" : ""}>${minutes} phút</option>`).join("")}</select></label>
+        <label><span>⚡ Chu kỳ tin</span><select id="host-event-minutes" aria-label="Chu kỳ sự kiện">${[1, 1.5, 2, 3, 4, 5].map((minutes) => `<option value="${minutes}" ${minutes === hostEventMinutes ? "selected" : ""}>${String(minutes).replace(".", ",")} phút</option>`).join("")}</select></label>
       </div>
       <button class="primary-button start-market" data-act="start" ${state.playersCount < 1 ? "disabled" : ""}>Mở thị trường · ${state.playersCount}/56 người</button>
     </footer>
@@ -290,12 +290,19 @@ function chartSvg(market) {
   </svg>`;
 }
 
-function tradeTape() {
-  const transactions = state.game.tradeTape.slice(0, 5);
-  const buyVolume = transactions.filter((item) => item.side === "buy").reduce((sum, item) => sum + item.quantity, 0);
-  const sellVolume = transactions.filter((item) => item.side === "sell").reduce((sum, item) => sum + item.quantity, 0);
-  const rows = transactions.map((transaction) => `<div class="tape-row"><span class="tape-side ${transaction.side === "sell" ? "sell" : ""}">${transaction.side === "buy" ? "MUA" : "BÁN"}</span><b>${escapeHtml(transaction.symbol)}</b><span>${escapeHtml(transaction.playerName || transaction.teamName)} · ${escapeHtml(transaction.teamName)} · ${integerFormat.format(transaction.quantity)} CP</span><strong>${formatPrice(transaction.price)}</strong></div>`).join("");
-  return `<div class="trade-tape"><div class="trade-tape-heading"><div class="trade-tape-header">Giao dịch gần nhất</div><div class="volume-summary"><span>Mua <b>${integerFormat.format(buyVolume)}</b></span><span class="sell">Bán <b>${integerFormat.format(sellVolume)}</b></span></div></div>${transactions.length ? `<div class="trade-tape-list">${rows}</div>` : `<div class="tape-empty muted">Chưa có giao dịch nào được khớp.</div>`}</div>`;
+function marketVolume() {
+  const market = marketBySymbol();
+  const buyVolume = Number(market.buyVolume || 0);
+  const sellVolume = Number(market.sellVolume || 0);
+  const totalVolume = buyVolume + sellVolume;
+  const buyShare = totalVolume ? Math.round((buyVolume / totalVolume) * 100) : 50;
+  const sellShare = totalVolume ? 100 - buyShare : 50;
+  return `<div class="market-volume">
+    <div class="market-volume-heading"><small>Khối lượng · ${escapeHtml(market.symbol)}</small><b>${integerFormat.format(totalVolume)} CP</b></div>
+    <div class="volume-split"><span><small>Chủ động mua</small><b>${integerFormat.format(buyVolume)} · ${totalVolume ? buyShare : 0}%</b></span><span class="sell"><small>Chủ động bán</small><b>${integerFormat.format(sellVolume)} · ${totalVolume ? sellShare : 0}%</b></span></div>
+    <div class="volume-bar" aria-label="Tỷ lệ khối lượng mua ${totalVolume ? buyShare : 0}% và bán ${totalVolume ? sellShare : 0}%"><i style="width:${totalVolume ? buyShare : 50}%"></i></div>
+    <div class="volume-meta"><span><small>Số lệnh</small><b>${integerFormat.format(market.tradeCount || 0)}</b></span><span><small>Giá khớp gần nhất</small><b>${market.lastTradePrice == null ? "—" : formatPrice(market.lastTradePrice)}</b></span></div>
+  </div>`;
 }
 
 function insightCard() {
@@ -312,7 +319,7 @@ function chartPanel() {
       <div class="headline-price"><strong class="price">${formatPrice(market.price)}</strong><span class="change ${down ? "down" : ""}">${formatSigned(market.changePct, "%")}</span></div>
     </div>
     <div class="chart-wrap">${chartSvg(market)}</div>
-    <div class="chart-footer">${tradeTape()}${insightCard()}</div>
+    <div class="chart-footer">${marketVolume()}${insightCard()}</div>
   </section>`;
 }
 

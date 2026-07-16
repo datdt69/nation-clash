@@ -1,7 +1,7 @@
 const STARTING_CASH = 100_000;
 const GAME_DURATION_MS = 10 * 60_000;
-const EVENT_INTERVAL_MS = 60_000;
-const FIRST_EVENT_DELAY_MS = 15_000;
+const EVENT_INTERVAL_MS = 90_000;
+const FIRST_EVENT_DELAY_MS = 30_000;
 const PRICE_TICK_MS = 1_000;
 const HISTORY_LIMIT = 120;
 const TRADING_FEE_RATE = 0.0015;
@@ -272,6 +272,10 @@ function createMarket(definition, now) {
     fundamental: definition.openPrice,
     changePct: 0,
     volume: 0,
+    buyVolume: 0,
+    sellVolume: 0,
+    tradeCount: 0,
+    lastTradePrice: null,
     orderPressure: 0,
     eventMomentum: 0,
     eventDecay: 0.96,
@@ -456,12 +460,9 @@ function applyEvent(game, event, at) {
 
 function triggerEvents(game, at, random = Math.random) {
   archiveEvents(game, at);
-  // Mở phiên bằng một tín hiệu rõ ràng; chỉ tăng mật độ tin sau khi người chơi đã có thời gian định vị xu hướng.
-  const count = game.eventRound === 0
-    ? 1
-    : game.eventRound < 3
-      ? 1 + Math.floor(safeRandom(random) * 2)
-      : 1 + Math.floor(safeRandom(random) * 3);
+  // Đợt đầu định vị xu hướng, đợt hai mở rộng tín hiệu; từ đợt ba dùng phân phối 20% / 50% / 30%.
+  const eventRoll = game.eventRound >= 2 ? safeRandom(random) : 0;
+  const count = game.eventRound === 0 ? 1 : game.eventRound === 1 ? 2 : eventRoll < 0.2 ? 1 : eventRoll < 0.7 ? 2 : 3;
   const pool = [...EVENT_CATALOG];
   const selected = [];
   for (let index = 0; index < count && pool.length; index += 1) {
@@ -616,6 +617,10 @@ function trade(game, accountId, order = {}, now = Date.now()) {
     );
   }
   market.volume += quantity;
+  if (side === "buy") market.buyVolume += quantity;
+  else market.sellVolume += quantity;
+  market.tradeCount += 1;
+  market.lastTradePrice = executionPrice;
   portfolio.feesPaid = roundPrice(portfolio.feesPaid + fee);
   portfolio.trades += 1;
   recordPrice(market, Number(now));
@@ -652,6 +657,10 @@ function publicMarket(market) {
     openPrice: market.openPrice,
     changePct: market.changePct,
     volume: market.volume,
+    buyVolume: market.buyVolume,
+    sellVolume: market.sellVolume,
+    tradeCount: market.tradeCount,
+    lastTradePrice: market.lastTradePrice,
     history: market.history,
   };
 }

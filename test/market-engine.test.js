@@ -11,6 +11,7 @@ const {
   createGame,
   tick,
   trade,
+  triggerEvents,
   portfolioValue,
   publicState,
   finishGame,
@@ -117,6 +118,10 @@ test("lệnh mua cập nhật tiền, cổ phiếu và đẩy giá lên", () => 
   assert.ok(game.portfolios.p0.cash < STARTING_CASH);
   assert.ok(market.price > beforePrice);
   assert.equal(game.tradeTape[0].side, "buy");
+  assert.equal(market.buyVolume, 20);
+  assert.equal(market.sellVolume, 0);
+  assert.equal(market.tradeCount, 1);
+  assert.equal(market.lastTradePrice, result.transaction.price);
 });
 
 test("nhiều lệnh cùng chiều trong 6 giây tạo hiệu ứng đám đông mạnh dần", () => {
@@ -286,15 +291,25 @@ test("sự kiện đầu xuất hiện sớm để người chơi có tín hiệ
 });
 
 test("mật độ tin tăng dần thay vì dội ba sự kiện ngay khi mở phiên", () => {
+  assert.equal(EVENT_INTERVAL_MS, 90_000);
   const { game } = setup(1, { durationMs: 6 * EVENT_INTERVAL_MS });
   tick(game, 1_000 + FIRST_EVENT_DELAY_MS, () => 0.999);
   assert.equal(game.activeEvents.length, 1);
   tick(game, 1_000 + FIRST_EVENT_DELAY_MS + EVENT_INTERVAL_MS, () => 0.999);
   assert.equal(game.activeEvents.length, 2);
   tick(game, 1_000 + FIRST_EVENT_DELAY_MS + 2 * EVENT_INTERVAL_MS, () => 0.999);
-  assert.equal(game.activeEvents.length, 2);
+  assert.equal(game.activeEvents.length, 3);
   tick(game, 1_000 + FIRST_EVENT_DELAY_MS + 3 * EVENT_INTERVAL_MS, () => 0.999);
   assert.equal(game.activeEvents.length, 3);
+});
+
+test("từ đợt ba phân phối số tin theo các ngưỡng 20%, 50% và 30%", () => {
+  for (const [roll, expected] of [[0.1, 1], [0.5, 2], [0.9, 3]]) {
+    const { game } = setup(1);
+    game.eventRound = 2;
+    triggerEvents(game, 2_000, () => roll);
+    assert.equal(game.activeEvents.length, expected);
+  }
 });
 
 test("sự kiện lớn được khuếch đại để dẫn dắt xu hướng thị trường", () => {
@@ -335,9 +350,13 @@ test("bán hết xóa vị thế và ghi lãi lỗ đã chốt", () => {
   game.markets.find((market) => market.symbol === "UST").price += 8;
   const sold = trade(game, "p0", { symbol: "UST", side: "sell", quantity: 10 }, 3_000);
   const portfolio = publicState(game, "p0").portfolio;
+  const market = publicState(game, "p0").markets.find((entry) => entry.symbol === "UST");
   assert.equal(sold.ok, true);
   assert.equal(portfolio.positions.length, 0);
   assert.ok(portfolio.realizedProfit > 0);
+  assert.equal(market.buyVolume, 10);
+  assert.equal(market.sellVolume, 10);
+  assert.equal(market.tradeCount, 2);
 });
 
 test("một người vẫn có thể mở thị trường", () => {

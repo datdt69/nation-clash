@@ -1203,10 +1203,11 @@ select:focus-visible {
   grid-template-columns: minmax(0, 1fr) minmax(240px, 0.72fr);
   gap: 9px;
   padding: 8px 14px 14px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .trade-tape,
+.market-volume,
 .insight-card {
   min-width: 0;
   border: 1px solid var(--line-soft);
@@ -1214,6 +1215,58 @@ select:focus-visible {
   padding: 9px 11px;
   background: var(--surface-2);
 }
+
+.market-volume {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+}
+
+.market-volume-heading,
+.volume-split,
+.volume-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.market-volume-heading small,
+.volume-split small,
+.volume-meta small {
+  color: var(--muted);
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.market-volume-heading b { font-size: 0.78rem; }
+.volume-split span { display: grid; gap: 2px; color: var(--green); }
+.volume-split span.sell { color: var(--red); text-align: right; }
+.volume-split b { font-size: 0.67rem; }
+
+.volume-bar {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--red);
+}
+
+.volume-bar i {
+  height: 100%;
+  display: block;
+  border-right: 2px solid #ffffff;
+  background: var(--green);
+}
+
+.volume-meta {
+  border-top: 1px solid var(--line-soft);
+  padding-top: 6px;
+}
+
+.volume-meta span { display: flex; align-items: center; gap: 6px; }
+.volume-meta b { font-size: 0.67rem; }
 
 .trade-tape-header,
 .insight-card > small {
