@@ -372,6 +372,7 @@ function createGame(teams, options = {}) {
     nextEventAt: now + Math.min(FIRST_EVENT_DELAY_MS, eventIntervalMs),
     lastTickAt: now,
     eventRound: 0,
+    urgentEventCount: 0,
     tradeSequence: 0,
     markets: MARKET_DEFINITIONS.map((market) => createMarket(market, now)),
     portfolios: Object.fromEntries(activeTeams.flatMap((team) => (
@@ -574,10 +575,15 @@ function triggerEvents(game, at, random = Math.random) {
     const selectedIndex = Math.floor(safeRandom(random) * pool.length);
     selected.push(pool.splice(selectedIndex, 1)[0]);
   }
-  // Từ đợt ba, 12% khả năng một tin thường bị thay bằng tin khẩn bất ngờ.
-  if (game.eventRound >= 2 && selected.length && safeRandom(random) < 0.12) {
+  // Từ đợt ba, tin khẩn xuất hiện ngẫu nhiên nhưng được điều tiết để trận 15 phút
+  // luôn có nhịp căng thẳng: tối thiểu một tin ở đợt 5, hai tin ở đợt 9, tối đa ba tin.
+  const urgentMinimum = game.eventRound >= 8 ? 2 : game.eventRound >= 4 ? 1 : 0;
+  const forceUrgent = game.urgentEventCount < urgentMinimum;
+  const randomUrgent = game.urgentEventCount < 3 && safeRandom(random) < 0.14;
+  if (game.eventRound >= 2 && selected.length && (forceUrgent || randomUrgent)) {
     const urgentIndex = Math.floor(safeRandom(random) * SURPRISE_EVENT_CATALOG.length);
     selected[selected.length - 1] = SURPRISE_EVENT_CATALOG[urgentIndex];
+    game.urgentEventCount += 1;
   }
   game.eventRound += 1;
   for (const market of game.markets) market.difficultyPhase = game.eventRound;
