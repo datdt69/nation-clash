@@ -33,6 +33,8 @@ let ticketView = "order";
 let tradePending = false;
 let clockFrame = 0;
 let serverOffset = 0;
+let hostGameMinutes = 10;
+let hostEventMinutes = 2;
 
 function brand() {
   return `<div class="brand">
@@ -95,7 +97,7 @@ function landing() {
       <div class="entry-card panel">
         <p class="eyebrow">Tham gia thị trường</p>
         <h2>${roomFromUrl ? `Phòng ${escapeHtml(roomFromUrl)}` : "Vào bằng mã phòng"}</h2>
-        <p>Mỗi người chọn một trong tám đội. Tối đa 7 người cùng dùng chung danh mục và 100.000 vốn của đội.</p>
+        <p>Mỗi người chọn một trong tám đội và nhận tài khoản riêng 100.000đ. Kết quả đội được tính theo lãi/lỗ trung bình của các thành viên.</p>
         <form id="join-form" autocomplete="off">
           <div class="field"><label for="room-code">Mã phòng</label><input id="room-code" name="code" maxlength="5" value="${escapeHtml(roomFromUrl)}" placeholder="VD: K7M2P" autocapitalize="characters" required></div>
           <div class="field"><label for="player-name">Tên người chơi</label><input id="player-name" name="nickname" maxlength="22" placeholder="VD: Minh Anh" required></div>
@@ -150,7 +152,11 @@ function hostLobby() {
       </div>
     </section>
     <footer class="lobby-footer">
-      <div class="lobby-rules"><span><b>01</b> Giá chạy mỗi giây</span><span><b>02</b> 1–3 sự kiện mỗi phút</span><span><b>03</b> Giàu nhất sau 10 phút thắng</span></div>
+      <div class="lobby-rules"><span><b>01</b> Mỗi người có 100.000đ</span><span><b>02</b> Event kéo dài ${hostEventMinutes} phút</span><span><b>03</b> Xếp hạng theo TB đội</span></div>
+      <div class="host-time-settings">
+        <label>Thị trường<select id="host-game-minutes">${[10, 15, 20, 25, 30].map((minutes) => `<option value="${minutes}" ${minutes === hostGameMinutes ? "selected" : ""}>${minutes} phút</option>`).join("")}</select></label>
+        <label>Mỗi event<select id="host-event-minutes">${[1, 2, 3, 4, 5].map((minutes) => `<option value="${minutes}" ${minutes === hostEventMinutes ? "selected" : ""}>${minutes} phút</option>`).join("")}</select></label>
+      </div>
       <button class="primary-button start-market" data-act="start" ${state.playersCount < 1 ? "disabled" : ""}>Mở thị trường · ${state.playersCount}/56 người</button>
     </footer>
   </main>`;
@@ -184,7 +190,7 @@ function tradingHeader() {
       <div class="game-clock-wrap"><small>Đóng cửa sau</small><b class="game-clock" data-countdown-end="${game.endsAt}">--:--</b></div>
     </div>
     <div class="header-actions">
-      ${view === "player" ? `<div class="account-chip"><small>Tài khoản đội</small><b>${escapeHtml(myTeam?.name || player?.nickname || "")}</b></div>` : `<span class="header-status"><i class="connection-dot"></i><small>Màn điều khiển</small></span>`}
+      ${view === "player" ? `<div class="account-chip"><small>Tài khoản cá nhân</small><b>${escapeHtml(player?.nickname || "")} · ${escapeHtml(myTeam?.name || "")}</b></div>` : `<span class="header-status"><i class="connection-dot"></i><small>Màn điều khiển</small></span>`}
       <button class="icon-button" data-act="fullscreen" aria-label="Toàn màn hình">⛶</button>
       ${view === "host" ? `<button class="danger-button" data-act="end">Kết thúc trận</button>` : ""}
     </div>
@@ -262,7 +268,7 @@ function chartSvg(market) {
 
 function tradeTape() {
   const transaction = state.game.tradeTape[0];
-  return `<div class="trade-tape"><div class="trade-tape-header">Lệnh gần nhất trên toàn sàn</div>${transaction ? `<div class="tape-row"><span class="tape-side ${transaction.side === "sell" ? "sell" : ""}">${transaction.side === "buy" ? "MUA" : "BÁN"}</span><b>${escapeHtml(transaction.symbol)}</b><span>${escapeHtml(transaction.teamName)} · ${integerFormat.format(transaction.quantity)} cổ phiếu</span><strong>${formatPrice(transaction.price)}</strong></div>` : `<div class="tape-row"><span class="muted">Chưa có giao dịch nào được khớp.</span></div>`}</div>`;
+  return `<div class="trade-tape"><div class="trade-tape-header">Lệnh gần nhất trên toàn sàn</div>${transaction ? `<div class="tape-row"><span class="tape-side ${transaction.side === "sell" ? "sell" : ""}">${transaction.side === "buy" ? "MUA" : "BÁN"}</span><b>${escapeHtml(transaction.symbol)}</b><span>${escapeHtml(transaction.playerName || transaction.teamName)} · ${escapeHtml(transaction.teamName)} · ${integerFormat.format(transaction.quantity)} cổ phiếu</span><strong>${formatPrice(transaction.price)}</strong></div>` : `<div class="tape-row"><span class="muted">Chưa có giao dịch nào được khớp.</span></div>`}</div>`;
 }
 
 function insightCard() {
@@ -299,7 +305,7 @@ function quotesPanel() {
 function leaderboardPanel() {
   return `<section class="leaderboard-panel panel"><div class="side-heading"><b>Xếp hạng tài sản</b><small>Cập nhật trực tiếp</small></div><div class="leaderboard-list">${state.game.leaderboard.map((entry) => {
     const down = entry.profit < 0;
-    return `<article class="rank-row ${entry.teamId === player?.teamId ? "me" : ""}" style="--team-color:${safeColor(entry.color)}"><span class="rank-number">#${entry.rank}</span><i class="rank-color"></i><div class="rank-team"><b>${escapeHtml(entry.teamName)}</b><small>${entry.trades} giao dịch</small></div><div class="rank-value"><b>${formatMoney(entry.netWorth)}</b><small class="${down ? "down" : ""}">${formatSigned(entry.profitPct, "%")}</small></div></article>`;
+    return `<article class="rank-row ${entry.teamId === player?.teamId ? "me" : ""}" style="--team-color:${safeColor(entry.color)}"><span class="rank-number">#${entry.rank}</span><i class="rank-color"></i><div class="rank-team"><b>${escapeHtml(entry.teamName)}</b><small>TB ${entry.members} người · ${entry.trades} lệnh</small></div><div class="rank-value"><b>${formatMoney(entry.netWorth)}</b><small class="${down ? "down" : ""}">${formatSigned(entry.profitPct, "%")}</small></div></article>`;
   }).join("")}</div></section>`;
 }
 
@@ -341,7 +347,7 @@ function orderTicket() {
   const invalid = quantity < 1 || quantity > maximum || tradePending;
   return `<section class="order-ticket panel">
     <div class="portfolio-strip">
-      <div class="portfolio-stat"><small>Tổng tài sản</small><b>${formatMoney(portfolio.netWorth)}</b></div>
+      <div class="portfolio-stat"><small>Tài sản cá nhân</small><b>${formatMoney(portfolio.netWorth)}</b></div>
       <div class="portfolio-stat"><small>Tiền khả dụng</small><b>${formatMoney(portfolio.cash)}</b></div>
       <div class="portfolio-stat"><small>Lãi / lỗ</small><b class="${profit < 0 ? "down" : "up"}">${formatSigned(profit, " đ")}</b></div>
     </div>
@@ -372,7 +378,7 @@ function finishScreen() {
   return `<main class="finish-screen screen">
     <header class="app-header">${brand()}<div class="header-actions"><span class="room-chip"><span>Phòng</span><b>${escapeHtml(state.code)}</b></span><button class="primary-button" data-act="home">Về trang chủ</button></div></header>
     <section class="finish-main">
-      <article class="winner-panel panel" style="--winner-color:${safeColor(winner.color)}"><div><div class="trophy">◆</div><p class="eyebrow">Dẫn đầu thị trường</p><h1>${escapeHtml(winner.teamName)}</h1><strong class="winner-worth">${formatMoney(winner.netWorth)}</strong><p>Kết thúc với ${formatSigned(winner.profitPct, "%")} so với vốn ban đầu sau ${winner.trades} giao dịch.</p></div><div class="winner-note">Xếp hạng dựa trên tiền mặt cộng giá trị toàn bộ cổ phiếu tại thời điểm thị trường đóng cửa.${myResult ? ` Đội bạn đứng hạng ${myResult.rank}.` : ""}</div></article>
+      <article class="winner-panel panel" style="--winner-color:${safeColor(winner.color)}"><div><div class="trophy">◆</div><p class="eyebrow">Dẫn đầu thị trường</p><h1>${escapeHtml(winner.teamName)}</h1><strong class="winner-worth">${formatMoney(winner.netWorth)}</strong><p>Trung bình ${winner.members} thành viên đạt ${formatSigned(winner.profitPct, "%")} sau ${winner.trades} giao dịch.</p></div><div class="winner-note">Xếp hạng theo tài sản trung bình mỗi người trong đội tại thời điểm đóng cửa.${myResult ? ` Đội bạn đứng hạng ${myResult.rank}.` : ""}</div></article>
       <section class="final-ranking panel"><div class="panel-heading"><div><p class="eyebrow">Kết quả cuối cùng</p><h2>Bảng tài sản các đội</h2></div><span class="player-count"><strong>${board.length}</strong> đội</span></div><div class="final-list" style="--rows:${board.length}">${board.map((entry) => `<article class="final-row ${entry.teamId === player?.teamId ? "me" : ""}" style="--team-color:${safeColor(entry.color)}"><span class="final-rank">#${entry.rank}</span><i class="rank-color"></i><div class="final-team"><b>${escapeHtml(entry.teamName)}</b><small>${entry.trades} giao dịch · phí đã tính trong tài sản</small></div><span class="final-profit ${entry.profit < 0 ? "down" : ""}">${formatSigned(entry.profitPct, "%")}</span><strong class="final-worth">${formatMoney(entry.netWorth)}</strong></article>`).join("")}</div></section>
     </section>
   </main>`;
@@ -576,6 +582,14 @@ app.addEventListener("submit", (event) => {
 });
 
 app.addEventListener("input", (event) => {
+  if (event.target.id === "host-game-minutes") {
+    hostGameMinutes = Number(event.target.value);
+    return;
+  }
+  if (event.target.id === "host-event-minutes") {
+    hostEventMinutes = Number(event.target.value);
+    return;
+  }
   if (event.target.id !== "order-quantity") return;
   orderQuantity = event.target.value;
   const estimate = document.querySelector("[data-order-estimate]");
@@ -667,7 +681,7 @@ app.addEventListener("click", async (event) => {
     return;
   }
   if (action === "start") {
-    socket.emit("host:start", host, (result) => {
+    socket.emit("host:start", { ...host, durationMinutes: hostGameMinutes, eventMinutes: hostEventMinutes }, (result) => {
       if (!result.ok) showToast(result.message, "error");
     });
     return;
