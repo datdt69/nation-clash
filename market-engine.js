@@ -441,12 +441,24 @@ function trade(game, teamId, order = {}, now = Date.now()) {
   }
 
   const direction = side === "buy" ? 1 : -1;
-  const rawImpact = (quantity / market.liquidity) * 0.034 + Math.log10(quantity + 1) * 0.00035;
+  const crowdWindowMs = 6_000;
+  const recentSameSide = game.tradeTape.filter((transaction) => (
+    transaction.symbol === market.symbol
+    && transaction.side === side
+    && Number(now) - transaction.at <= crowdWindowMs
+  )).length;
+  const recentOppositeSide = game.tradeTape.filter((transaction) => (
+    transaction.symbol === market.symbol
+    && transaction.side !== side
+    && Number(now) - transaction.at <= crowdWindowMs
+  )).length;
+  const crowdMultiplier = clamp(1 + recentSameSide * 0.28 - recentOppositeSide * 0.08, 0.75, 3.25);
+  const rawImpact = ((quantity / market.liquidity) * 0.095 + Math.log10(quantity + 1) * 0.00075) * crowdMultiplier;
   const modelDamping = market.model === "socialist" ? 0.72 : 1;
-  const impact = clamp(rawImpact * modelDamping, 0.00015, 0.018);
+  const impact = clamp(rawImpact * modelDamping, 0.0003, 0.055);
   market.price = roundPrice(Math.max(5, market.price * (1 + direction * impact)));
   market.changePct = roundPrice(((market.price - market.openPrice) / market.openPrice) * 100);
-  market.orderPressure += direction * (quantity / market.liquidity);
+  market.orderPressure += direction * (quantity / market.liquidity) * crowdMultiplier * 1.8;
   market.volume += quantity;
   portfolio.feesPaid = roundPrice(portfolio.feesPaid + fee);
   portfolio.trades += 1;
@@ -461,6 +473,8 @@ function trade(game, teamId, order = {}, now = Date.now()) {
     quantity,
     price: executionPrice,
     fee,
+    impactPct: roundPrice(impact * 100),
+    crowdLevel: recentSameSide + 1,
     at: Number(now),
   };
   game.tradeTape.unshift(transaction);
