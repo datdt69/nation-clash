@@ -218,7 +218,7 @@ const safeRandom = (random) => clamp(Number(random()) || 0, 0, 0.999999);
 function seededHistory(definition, now) {
   const seed = definition.symbol.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
   const history = [];
-  for (let offset = -24; offset <= 0; offset += 1) {
+  for (let offset = -(HISTORY_LIMIT - 1); offset <= 0; offset += 1) {
     const wave = offset === 0 ? 0 : Math.sin((offset + seed) * 0.63) * 0.0025;
     history.push({ at: now + offset * PRICE_TICK_MS, price: roundPrice(definition.openPrice * (1 + wave)) });
   }
@@ -511,13 +511,13 @@ function trade(game, accountId, order = {}, now = Date.now()) {
     && transaction.side !== side
     && Number(now) - transaction.at <= crowdWindowMs
   )).length;
-  const crowdMultiplier = clamp(1 + recentSameSide * 0.2 - recentOppositeSide * 0.08, 0.75, 2.2);
-  const rawImpact = ((quantity / market.liquidity) * 0.06 + Math.log10(quantity + 1) * 0.00055) * crowdMultiplier;
+  const crowdMultiplier = clamp(1 + recentSameSide * 0.08 - recentOppositeSide * 0.05, 0.75, 1.5);
+  const rawImpact = ((quantity / market.liquidity) * 0.022 + Math.log10(quantity + 1) * 0.0002) * crowdMultiplier;
   const modelDamping = market.model === "socialist" ? 0.72 : 1;
-  const impact = clamp(rawImpact * modelDamping, 0.0003, 0.025);
+  const impact = clamp(rawImpact * modelDamping, 0.00015, 0.012);
   market.price = roundPrice(Math.max(5, market.price * (1 + direction * impact)));
   market.changePct = roundPrice(((market.price - market.openPrice) / market.openPrice) * 100);
-  market.orderPressure += direction * (quantity / market.liquidity) * crowdMultiplier * 1.3;
+  market.orderPressure += direction * (quantity / market.liquidity) * crowdMultiplier * 0.72;
   for (const [, targetSymbol, strength] of linkedMarkets(market.symbol)) {
     const target = getMarket(game, targetSymbol);
     if (target) target.orderPressure += direction * (quantity / market.liquidity) * crowdMultiplier * strength;
