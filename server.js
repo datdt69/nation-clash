@@ -48,7 +48,7 @@ function finish(room) {
   emitState(room);
 }
 function start(room) {
-  if (room.players.size < 2) throw new Error("Liar Market cần ít nhất 2 đội");
+  if (room.players.size < 2) throw new Error("Chợ Nói Dối cần ít nhất 2 đội");
   room.status = "playing";
   room.champions = null;
   room.game = createGame(room.teams);
@@ -72,7 +72,7 @@ io.on("connection", socket => {
   });
   socket.on("host:resume", ({code,hostToken}={}, cb=()=>{}) => {
     const room=rooms.get(String(code||"").toUpperCase());
-    if(!room||room.hostToken!==hostToken) return cb({ok:false,message:"Không thể khôi phục host"});
+    if(!room||room.hostToken!==hostToken) return cb({ok:false,message:"Không thể khôi phục màn điều khiển"});
     socket.join(`${room.code}:host`); cb({ok:true,code:room.code,joinUrl:room.joinUrl,qrDataUrl:room.qrDataUrl}); emitState(room);
   });
   socket.on("host:start", ({code,hostToken}={},cb=()=>{}) => {
@@ -103,5 +103,5 @@ setInterval(()=>{
 },250).unref();
 setInterval(()=>{for(const [code,room] of rooms)if(Date.now()-room.createdAt>3*60*60*1000)rooms.delete(code);},1800000).unref();
 
-if(require.main===module)server.listen(PORT,"0.0.0.0",()=>console.log(`Liar Market Bar tại http://localhost:${PORT}`));
+if(require.main===module)server.listen(PORT,"0.0.0.0",()=>console.log(`Chợ Nói Dối tại http://localhost:${PORT}`));
 module.exports={app,server,rooms};

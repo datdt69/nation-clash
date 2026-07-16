@@ -55,7 +55,7 @@ const EVENTS = [
     kicker: "TĂNG TRƯỞNG KHÔNG ĐỀU",
     title: "Khoảng cách thu nhập nới rộng",
     description:
-      "GDP vẫn tăng nhưng một bộ phận người dân bị bỏ lại. Đầu tư an sinh đúng lúc sẽ giữ sức mua và ổn định xã hội.",
+      "Sản lượng vẫn tăng nhưng một bộ phận người dân bị bỏ lại. Đầu tư an sinh đúng lúc sẽ giữ sức mua và ổn định xã hội.",
     news: "Áp lực việc làm, y tế và giáo dục tăng cao.",
     policyBonus: { welfare: { welfare: 8, gdp: 2 } },
     afterRound(team) {

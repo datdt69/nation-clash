@@ -7,7 +7,7 @@ const TARGETS=[
 const CARD_TYPES={
  private:{name:"Doanh nghiệp tư nhân",short:"TƯ NHÂN",icon:"◆",category:"growth",desc:"Lợi nhuận nhanh, cạnh tranh mạnh"},
  state:{name:"Doanh nghiệp nhà nước",short:"NHÀ NƯỚC",icon:"★",category:"regulation",desc:"Giữ ngành thiết yếu, ổn định thị trường"},
- fdi:{name:"Doanh nghiệp FDI",short:"FDI",icon:"◎",category:"growth",desc:"Vốn và công nghệ, có rủi ro phụ thuộc"},
+ fdi:{name:"Doanh nghiệp vốn ngoại",short:"VỐN NGOẠI",icon:"◎",category:"growth",desc:"Có vốn và công nghệ nhưng dễ phát sinh phụ thuộc"},
  coop:{name:"Hợp tác xã",short:"HỢP TÁC XÃ",icon:"⬡",category:"welfare",desc:"Việc làm và phân phối công bằng"},
  public:{name:"Đầu tư công",short:"ĐẦU TƯ CÔNG",icon:"▦",category:"regulation",desc:"Tạo hạ tầng nhưng tiêu tốn ngân sách"},
  social:{name:"An sinh xã hội",short:"AN SINH",icon:"♥",category:"welfare",desc:"Giảm bất bình đẳng, cần ngân sách"},
@@ -31,7 +31,7 @@ function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random
 function makeDeck(){let n=0,deck=[];for(const type of Object.keys(CARD_TYPES))for(let i=0;i<CARD_COUNTS[type];i++)deck.push({id:`card-${++n}-${Math.random().toString(36).slice(2,7)}`,type,...CARD_TYPES[type]});return shuffle(deck)}
 function score(e){return Object.values(e.stats).reduce((sum,n)=>sum+n,0)}
 function applyDelta(e,d){for(const k of ["gdp","budget","welfare","stability"])e.stats[k]=clamp(e.stats[k]+(d[k]||0))}
-function crisisText(c){return Object.entries(c.delta).map(([k,v])=>`${({gdp:"GDP",budget:"Ngân sách",welfare:"An sinh",stability:"Ổn định"})[k]} ${v}`).join(" · ")}
+function crisisText(c){return Object.entries(c.delta).map(([k,v])=>`${({gdp:"Sản lượng",budget:"Ngân sách",welfare:"An sinh",stability:"Ổn định"})[k]} ${v}`).join(" · ")}
 function createGame(teams,{now=Date.now()}={}){
  const seats=active(teams).map(t=>t.id),deck=makeDeck(),economies={};
  for(const t of active(teams))economies[t.id]={teamId:t.id,name:t.players[0].nickname,color:t.color,hand:deck.splice(0,HAND_SIZE),stats:{gdp:100,budget:100,welfare:100,stability:100},crises:[],place:null,finishBonus:0,effect:{id:"safe",name:"CHƯA GẶP KHỦNG HOẢNG",desc:"Bốn chỉ số đang ở mức 100"}};
