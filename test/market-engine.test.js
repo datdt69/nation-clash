@@ -10,6 +10,7 @@ const {
   createGame,
   tick,
   trade,
+  portfolioValue,
   publicState,
   finishGame,
   leaderboard,
@@ -34,9 +35,9 @@ test("có đúng 12 ngành gắn với 12 quốc gia", () => {
   assert.ok(MARKET_LINKS.length >= 20);
 });
 
-test("mỗi đội có 100.000 vốn và danh mục riêng", () => {
+test("mỗi người có 100.000 vốn và danh mục riêng", () => {
   const { game } = setup(2);
-  const player = publicState(game, "team-1");
+  const player = publicState(game, "p0");
   const host = publicState(game);
   assert.equal(player.portfolio.cash, STARTING_CASH);
   assert.equal(Object.keys(player.portfolio.holdings).length, 12);
@@ -44,23 +45,37 @@ test("mỗi đội có 100.000 vốn và danh mục riêng", () => {
   assert.equal(player.leaderboard.length, 2);
 });
 
+test("hai người cùng đội có ví riêng và đội xếp hạng theo tài sản trung bình", () => {
+  const teams = Array.from({ length: 8 }, (_, index) => createTeam(index));
+  teams[0].players.push({ id: "a", nickname: "An" }, { id: "b", nickname: "Bình" });
+  teams[1].players.push({ id: "c", nickname: "Chi" });
+  const game = createGame(teams, { now: 1_000 });
+  trade(game, "a", { symbol: "VNE", side: "buy", quantity: 10 }, 2_000);
+  assert.equal(game.portfolios.b.cash, STARTING_CASH);
+  game.portfolios.a.cash += 2_000;
+  const team = leaderboard(game).find((entry) => entry.teamId === "team-1");
+  const expectedAverage = (portfolioValue(game, game.portfolios.a) + portfolioValue(game, game.portfolios.b)) / 2;
+  assert.equal(team.members, 2);
+  assert.equal(team.netWorth, Math.round(expectedAverage * 100) / 100);
+});
+
 test("lệnh mua cập nhật tiền, cổ phiếu và đẩy giá lên", () => {
   const { game } = setup(2);
   const market = game.markets.find((entry) => entry.symbol === "VNE");
   const beforePrice = market.price;
-  const result = trade(game, "team-1", { symbol: "VNE", side: "buy", quantity: 20 }, 2_000);
+  const result = trade(game, "p0", { symbol: "VNE", side: "buy", quantity: 20 }, 2_000);
   assert.equal(result.ok, true);
-  assert.equal(game.portfolios["team-1"].holdings.VNE, 20);
-  assert.ok(game.portfolios["team-1"].cash < STARTING_CASH);
+  assert.equal(game.portfolios.p0.holdings.VNE, 20);
+  assert.ok(game.portfolios.p0.cash < STARTING_CASH);
   assert.ok(market.price > beforePrice);
   assert.equal(game.tradeTape[0].side, "buy");
 });
 
 test("nhiều lệnh cùng chiều trong 6 giây tạo hiệu ứng đám đông mạnh dần", () => {
   const { game } = setup(3);
-  const first = trade(game, "team-1", { symbol: "VNE", side: "buy", quantity: 50 }, 2_000);
-  const second = trade(game, "team-2", { symbol: "VNE", side: "buy", quantity: 50 }, 3_000);
-  const third = trade(game, "team-3", { symbol: "VNE", side: "buy", quantity: 50 }, 4_000);
+  const first = trade(game, "p0", { symbol: "VNE", side: "buy", quantity: 50 }, 2_000);
+  const second = trade(game, "p1", { symbol: "VNE", side: "buy", quantity: 50 }, 3_000);
+  const third = trade(game, "p2", { symbol: "VNE", side: "buy", quantity: 50 }, 4_000);
   assert.equal(first.ok, true);
   assert.ok(second.transaction.impactPct > first.transaction.impactPct);
   assert.ok(third.transaction.impactPct > second.transaction.impactPct);
@@ -72,7 +87,7 @@ test("lệnh mua mã nguồn truyền áp lực sang ngành liên quan", () => {
   const energy = game.markets.find((market) => market.symbol === "VNE");
   const machinery = game.markets.find((market) => market.symbol === "DEM");
   const before = machinery.orderPressure;
-  const result = trade(game, "team-1", { symbol: "VNE", side: "buy", quantity: 200 }, 2_000);
+  const result = trade(game, "p0", { symbol: "VNE", side: "buy", quantity: 200 }, 2_000);
   assert.equal(result.ok, true);
   assert.ok(energy.orderPressure > 0);
   assert.ok(machinery.orderPressure > before);
@@ -80,8 +95,8 @@ test("lệnh mua mã nguồn truyền áp lực sang ngành liên quan", () => {
 
 test("không cho bán khống hoặc mua vượt quá số vốn", () => {
   const { game } = setup(2);
-  const short = trade(game, "team-1", { symbol: "UST", side: "sell", quantity: 1 });
-  const tooLarge = trade(game, "team-1", { symbol: "UST", side: "buy", quantity: 9_999 });
+  const short = trade(game, "p0", { symbol: "UST", side: "sell", quantity: 1 });
+  const tooLarge = trade(game, "p0", { symbol: "UST", side: "buy", quantity: 9_999 });
   assert.equal(short.ok, false);
   assert.match(short.message, /không đủ cổ phiếu/i);
   assert.equal(tooLarge.ok, false);
@@ -91,7 +106,7 @@ test("không cho bán khống hoặc mua vượt quá số vốn", () => {
 test("đúng phút thứ nhất sinh 1-3 sự kiện và giấu hệ số tác động", () => {
   const { game } = setup(2);
   const result = tick(game, 1_000 + EVENT_INTERVAL_MS, () => 0);
-  const state = publicState(game, "team-1");
+  const state = publicState(game, "p0");
   assert.equal(result.changed, true);
   assert.equal(state.eventRound, 1);
   assert.equal(state.activeEvents.length, 1);
@@ -109,12 +124,22 @@ test("sự kiện lớn được khuếch đại để dẫn dắt xu hướng t
   assert.ok(after > before);
 });
 
+test("event 5 phút vẫn giữ động lượng đáng kể sau 2 phút", () => {
+  const eventIntervalMs = 5 * 60_000;
+  const { game } = setup(1, { durationMs: 10 * 60_000, eventIntervalMs });
+  tick(game, 1_000 + eventIntervalMs, () => 0);
+  const initial = game.markets.reduce((sum, market) => sum + Math.abs(market.eventMomentum), 0);
+  tick(game, 1_000 + eventIntervalMs + 2 * 60_000, () => 0.5);
+  const later = game.markets.reduce((sum, market) => sum + Math.abs(market.eventMomentum), 0);
+  assert.ok(later > initial * 0.25);
+});
+
 test("danh mục ghi giá vốn, tiền đã mua và lãi lỗ chưa chốt", () => {
   const { game } = setup(1);
-  const bought = trade(game, "team-1", { symbol: "VNE", side: "buy", quantity: 10 }, 2_000);
+  const bought = trade(game, "p0", { symbol: "VNE", side: "buy", quantity: 10 }, 2_000);
   assert.equal(bought.ok, true);
   game.markets.find((market) => market.symbol === "VNE").price += 5;
-  const position = publicState(game, "team-1").portfolio.positions[0];
+  const position = publicState(game, "p0").portfolio.positions[0];
   assert.equal(position.symbol, "VNE");
   assert.equal(position.quantity, 10);
   assert.ok(position.invested > 0);
@@ -124,10 +149,10 @@ test("danh mục ghi giá vốn, tiền đã mua và lãi lỗ chưa chốt", ()
 
 test("bán hết xóa vị thế và ghi lãi lỗ đã chốt", () => {
   const { game } = setup(1);
-  trade(game, "team-1", { symbol: "UST", side: "buy", quantity: 10 }, 2_000);
+  trade(game, "p0", { symbol: "UST", side: "buy", quantity: 10 }, 2_000);
   game.markets.find((market) => market.symbol === "UST").price += 8;
-  const sold = trade(game, "team-1", { symbol: "UST", side: "sell", quantity: 10 }, 3_000);
-  const portfolio = publicState(game, "team-1").portfolio;
+  const sold = trade(game, "p0", { symbol: "UST", side: "sell", quantity: 10 }, 3_000);
+  const portfolio = publicState(game, "p0").portfolio;
   assert.equal(sold.ok, true);
   assert.equal(portfolio.positions.length, 0);
   assert.ok(portfolio.realizedProfit > 0);
@@ -151,7 +176,7 @@ test("phân tích chỉ xuất hiện sau khi sự kiện cũ kết thúc", () =
 
 test("kết thúc trận xếp hạng theo tổng tài sản", () => {
   const { game } = setup(3);
-  game.portfolios["team-2"].cash += 5_000;
+  game.portfolios.p1.cash += 5_000;
   finishGame(game, 5_000);
   const board = leaderboard(game);
   assert.equal(game.phase, "finished");

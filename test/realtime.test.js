@@ -64,7 +64,9 @@ test("host tạo phòng, hai đội vào và giao dịch realtime", async (t) =>
   const [firstState, secondState] = await Promise.all([firstPlaying, secondPlaying]);
   assert.equal(firstState.game.markets.length, 12);
   assert.equal(firstState.game.portfolio.teamId, joinedFirst.teamId);
+  assert.equal(firstState.game.portfolio.accountId, joinedFirst.playerId);
   assert.equal(secondState.game.portfolio.teamId, joinedSecond.teamId);
+  assert.equal(secondState.game.portfolio.accountId, joinedSecond.playerId);
 
   const tradeState = waitForState(second, (state) => state.game?.tradeTape[0]?.teamId === joinedFirst.teamId);
   const bought = await emitAck(first, "player:trade", {
@@ -79,6 +81,7 @@ test("host tạo phòng, hai đội vào và giao dịch realtime", async (t) =>
   assert.equal(afterTrade.game.tradeTape[0].symbol, "VNE");
   assert.equal(afterTrade.game.tradeTape[0].quantity, 10);
   assert.equal(afterTrade.game.portfolio.teamId, joinedSecond.teamId);
+  assert.equal(afterTrade.game.portfolio.holdings.VNE, 0);
 });
 
 test("phòng nhận tối đa 56 người, 7 người mỗi đội và chặn người thứ 57", async (t) => {
@@ -134,7 +137,11 @@ test("host mở được thị trường chỉ với 1 người", async (t) => {
   });
   assert.equal(joined.ok, true);
   const playing = waitForState(player, (state) => state.status === "playing");
-  const started = await emitAck(host, "host:start", { code: created.code, hostToken: created.hostToken });
+  const started = await emitAck(host, "host:start", { code: created.code, hostToken: created.hostToken, durationMinutes: 30, eventMinutes: 5 });
   assert.equal(started.ok, true);
-  assert.equal((await playing).game.portfolio.teamId, "team-4");
+  const state = await playing;
+  assert.equal(state.game.portfolio.teamId, "team-4");
+  assert.equal(state.game.portfolio.accountId, joined.playerId);
+  assert.equal(state.game.eventIntervalMs, 5 * 60_000);
+  assert.equal(state.game.endsAt - state.game.startedAt, 30 * 60_000);
 });
