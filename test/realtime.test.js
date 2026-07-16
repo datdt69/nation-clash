@@ -26,22 +26,24 @@ function waitForState(socket, predicate, timeout = 3000) {
   });
 }
 
-test("host tạo phòng và bắt đầu realtime chỉ với một đại diện", async (t) => {
+test("host tạo phòng và bắt đầu Liar Market với hai đội", async (t) => {
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   const port = server.address().port;
   const url = `http://127.0.0.1:${port}`;
   const host = createClient(url, { transports: ["websocket"] });
   const p1 = createClient(url, { transports: ["websocket"] });
+  const p2 = createClient(url, { transports: ["websocket"] });
 
   t.after(async () => {
     host.close();
     p1.close();
+    p2.close();
     rooms.clear();
     await new Promise((resolve) => server.close(resolve));
   });
 
   await Promise.all(
-    [host, p1].map(
+    [host, p1, p2].map(
       (socket) =>
         new Promise((resolve) =>
           socket.connected ? resolve() : socket.once("connect", resolve),
@@ -58,6 +60,8 @@ test("host tạo phòng và bắt đầu realtime chỉ với một đại diệ
     nickname: "An",
   });
   assert.equal(joined1.ok, true);
+  const joined2 = await emitAck(p2, "player:join", {code:created.code,nickname:"Bình"});
+  assert.equal(joined2.ok, true);
 
   const playingState = waitForState(p1, (state) => state.status === "playing");
   const started = await emitAck(host, "host:start", {
@@ -66,10 +70,34 @@ test("host tạo phòng và bắt đầu realtime chỉ với một đại diệ
   });
   assert.equal(started.ok, true);
   const state = await playingState;
-  assert.equal(state.playersCount, 1);
+  assert.equal(state.playersCount, 2);
   assert.ok(state.game);
-  assert.ok(state.game.commanders[joined1.teamId]);
-  assert.equal(state.game.soldiers[joined1.teamId].length, 3);
+  assert.equal(state.game.turnTeamId, joined1.teamId);
+  assert.equal(state.game.hand.length, 6);
+  assert.equal(state.game.economies[joined2.teamId].handCount, 6);
+  assert.equal(state.game.economies[joined2.teamId].hand, undefined);
+
+  const turnState = waitForState(p2, (s) => s.game?.pile.length === 1);
+  const played = await emitAck(p1, "player:play", {
+    code: created.code,
+    playerToken: joined1.playerToken,
+    cardIds: [state.game.hand[0].id],
+  });
+  assert.equal(played.ok, true);
+  const afterPlay = await turnState;
+  assert.equal(afterPlay.game.turnTeamId, joined2.teamId);
+  assert.equal(afterPlay.game.pile[0].count, 1);
+  assert.equal(afterPlay.game.pile[0].cards, undefined);
+
+  const revealState = waitForState(host, (s) => s.game?.phase === "reveal");
+  const challenged = await emitAck(p2, "player:challenge", {
+    code: created.code,
+    playerToken: joined2.playerToken,
+  });
+  assert.equal(challenged.ok, true);
+  const revealed = await revealState;
+  assert.equal(revealed.game.hand, null);
+  assert.equal(revealed.game.reveal.cards.length, 1);
 });
 
 test("phòng nhận đủ 8 đại diện, mỗi đội một người và chặn người thứ 9", async (t) => {
