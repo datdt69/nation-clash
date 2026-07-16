@@ -499,15 +499,17 @@ input:focus-visible {
 
 .join-display {
   display: grid;
-  grid-template-columns: minmax(190px, 0.78fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
   align-items: center;
-  gap: clamp(18px, 3vw, 42px);
+  justify-items: center;
+  gap: clamp(16px, 2vh, 28px);
   padding: clamp(22px, 3vw, 42px);
 }
 
 .qr-shell {
   aspect-ratio: 1;
-  width: min(100%, 340px);
+  width: min(72%, 320px, 42vh);
   display: grid;
   place-items: center;
   justify-self: center;
@@ -550,13 +552,19 @@ input:focus-visible {
 }
 
 .join-copy.compact {
+  width: 100%;
+  min-width: 0;
   display: grid;
   place-items: center;
   text-align: center;
 }
 
 .join-copy.compact .room-code-large {
+  max-width: 100%;
   margin-bottom: 0;
+  font-size: clamp(2.6rem, 4.2vw, 5rem);
+  letter-spacing: 0.16em;
+  white-space: nowrap;
 }
 
 .join-link {
