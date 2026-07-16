@@ -214,6 +214,50 @@ const EVENT_CATALOG = [
   },
 ];
 
+// Tin khẩn là biến cố hiếm, thay thế một tin thường trong đợt (không làm vượt quá 3 thẻ tin).
+const SURPRISE_EVENT_CATALOG = [
+  {
+    id: "emergency-chip-outage",
+    icon: "!",
+    tag: "TIN KHẨN",
+    title: "Nhà máy chip lớn dừng hoạt động",
+    description: "Sự cố kỹ thuật bất ngờ làm nguồn cung bán dẫn toàn cầu co lại ngay trong phiên.",
+    analysis: "Bán dẫn Hàn Quốc chịu cú sốc trực tiếp; ô tô, công nghệ và thương mại điện tử bị ảnh hưởng dây chuyền.",
+    urgent: true,
+    impacts: [["KRS", -0.007, 1.65, "Giảm rất mạnh"], ["JPA", -0.0042, 1.38, "Giảm mạnh"], ["UST", -0.0036, 1.35, "Giảm"], ["CNE", -0.0024, 1.18, "Giảm nhẹ"]],
+  },
+  {
+    id: "emergency-oil-disruption",
+    icon: "!",
+    tag: "TIN KHẨN",
+    title: "Tuyến vận tải dầu bị gián đoạn",
+    description: "Nguồn cung năng lượng thắt chặt đột ngột, chi phí nhiên liệu và vận chuyển bật tăng.",
+    analysis: "Dầu mỏ và năng lượng tăng nhanh; logistics, ô tô và chế tạo chịu áp lực chi phí.",
+    urgent: true,
+    impacts: [["SAO", 0.0072, 1.7, "Tăng rất mạnh"], ["VNE", 0.0045, 1.32, "Tăng mạnh"], ["SGL", -0.0048, 1.45, "Giảm mạnh"], ["JPA", -0.0032, 1.28, "Giảm"], ["DEM", -0.003, 1.24, "Giảm"]],
+  },
+  {
+    id: "emergency-cyberattack",
+    icon: "!",
+    tag: "TIN KHẨN",
+    title: "Tấn công mạng làm gián đoạn thanh toán",
+    description: "Một sự cố an ninh mạng khiến giao dịch điện tử và luân chuyển vốn chậm lại.",
+    analysis: "Tài chính và thương mại điện tử giảm mạnh; công nghệ biến động hai chiều vì nhu cầu bảo mật tăng.",
+    urgent: true,
+    impacts: [["UKF", -0.0064, 1.72, "Giảm rất mạnh"], ["CNE", -0.0052, 1.52, "Giảm mạnh"], ["UST", 0.0018, 1.6, "Biến động mạnh"], ["SGL", -0.0028, 1.3, "Giảm"]],
+  },
+  {
+    id: "emergency-medical-breakthrough",
+    icon: "!",
+    tag: "TIN KHẨN",
+    title: "Đột phá y khoa được công bố sớm",
+    description: "Kết quả thử nghiệm vượt kỳ vọng khiến dòng tiền bất ngờ chuyển mạnh sang y tế.",
+    analysis: "Y tế và dược phẩm tăng sốc; vốn ngắn hạn rút khỏi một số ngành tăng trưởng cao.",
+    urgent: true,
+    impacts: [["CUB", 0.0075, 1.62, "Tăng rất mạnh"], ["UST", -0.0024, 1.28, "Giảm nhẹ"], ["CNE", -0.0018, 1.18, "Giảm nhẹ"]],
+  },
+];
+
 const roundPrice = (value) => Math.round(value * 100) / 100;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const safeRandom = (random) => clamp(Number(random()) || 0, 0, 0.999999);
@@ -283,6 +327,7 @@ function createMarket(definition, now) {
     returnMomentum: 0,
     volatilityRegime: 1,
     hiddenRegime: "calm",
+    difficultyPhase: 0,
     regimeDrift: 0,
     regimeVolatility: 1,
     regimeEndsAt: now + 60_000,
@@ -359,6 +404,12 @@ function recordPrice(market, at) {
 }
 
 function rotateMarketRegime(market, now, random) {
+  if (market.difficultyPhase < 3) {
+    market.hiddenRegime = "calm";
+    market.regimeDrift = 0;
+    market.regimeVolatility = market.difficultyPhase < 2 ? 0.82 : 0.94;
+    return;
+  }
   if (now < market.regimeEndsAt) return;
   const roll = safeRandom(random);
   if (roll < 0.34) {
@@ -376,12 +427,12 @@ function rotateMarketRegime(market, now, random) {
   } else if (roll < 0.9) {
     market.hiddenRegime = "turbulence";
     market.regimeDrift = (safeRandom(random) - 0.5) * 0.00005;
-    market.regimeVolatility = 1.72;
+    market.regimeVolatility = 1.55;
   } else {
     const direction = safeRandom(random) < 0.5 ? -1 : 1;
     market.hiddenRegime = direction > 0 ? "short-squeeze" : "liquidity-crunch";
-    market.regimeDrift = direction * 0.000095;
-    market.regimeVolatility = 1.48;
+    market.regimeDrift = direction * 0.000075;
+    market.regimeVolatility = 1.4;
   }
   market.regimeEndsAt = now + (90 + safeRandom(random) * 150) * 1_000;
 }
@@ -409,7 +460,8 @@ function updateMarketPrice(market, now, random) {
     1.75,
   );
   market.volatilityRegime += (targetRegime - market.volatilityRegime) * 0.16;
-  const noise = gaussianNoise * market.volatility * market.eventVolatility * market.volatilityRegime * market.regimeVolatility * 1.22;
+  const learningScale = market.difficultyPhase === 0 ? 0.7 : market.difficultyPhase === 1 ? 0.78 : market.difficultyPhase === 2 ? 0.9 : 1;
+  const noise = gaussianNoise * market.volatility * market.eventVolatility * market.volatilityRegime * market.regimeVolatility * 1.22 * learningScale;
   const meanReversion = ((market.fundamental - market.price) / market.fundamental) * model.stabilizer;
   const demand = clamp(market.orderPressure, -1.5, 1.5) * (market.model === "socialist" ? 0.0011 : 0.00155);
   const microDrift = (safeRandom(random) - 0.5) * 0.00024;
@@ -419,11 +471,11 @@ function updateMarketPrice(market, now, random) {
   const flashChance = 0.00012 + crowdStress * 0.0012 + Math.max(0, market.regimeVolatility - 1) * 0.00032 + Math.max(0, priceDislocation - 0.035) * 0.008;
   let flashShock = market.flashRebound;
   market.flashRebound = 0;
-  if (now - market.lastFlashAt > 30_000 && safeRandom(random) < flashChance) {
+  if (market.difficultyPhase >= 3 && now - market.lastFlashAt > 30_000 && safeRandom(random) < flashChance) {
     const crowdedDirection = Math.sign(market.orderPressure);
     const direction = crowdedDirection ? -crowdedDirection : safeRandom(random) < 0.5 ? -1 : 1;
     const modelScale = market.model === "socialist" ? 0.76 : 1;
-    flashShock += direction * (0.012 + safeRandom(random) * 0.026) * modelScale;
+    flashShock += direction * (0.01 + safeRandom(random) * 0.022) * modelScale;
     market.flashRebound = -flashShock * (0.52 + safeRandom(random) * 0.2);
     market.lastFlashAt = now;
     market.eventVolatility = Math.max(market.eventVolatility, 1.4);
@@ -507,6 +559,7 @@ function applyEvent(game, event, at) {
     analysis: event.analysis,
     startedAt: at,
     endsAt: at + game.eventIntervalMs,
+    urgent: Boolean(event.urgent),
   };
 }
 
@@ -521,7 +574,13 @@ function triggerEvents(game, at, random = Math.random) {
     const selectedIndex = Math.floor(safeRandom(random) * pool.length);
     selected.push(pool.splice(selectedIndex, 1)[0]);
   }
+  // Từ đợt ba, 12% khả năng một tin thường bị thay bằng tin khẩn bất ngờ.
+  if (game.eventRound >= 2 && selected.length && safeRandom(random) < 0.12) {
+    const urgentIndex = Math.floor(safeRandom(random) * SURPRISE_EVENT_CATALOG.length);
+    selected[selected.length - 1] = SURPRISE_EVENT_CATALOG[urgentIndex];
+  }
   game.eventRound += 1;
+  for (const market of game.markets) market.difficultyPhase = game.eventRound;
   game.activeEvents = selected.map((event) => applyEvent(game, event, at));
   return game.activeEvents;
 }
@@ -803,6 +862,7 @@ module.exports = {
   MARKET_DEFINITIONS,
   MARKET_LINKS,
   EVENT_CATALOG,
+  SURPRISE_EVENT_CATALOG,
   STARTING_CASH,
   GAME_DURATION_MS,
   EVENT_INTERVAL_MS,

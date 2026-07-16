@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f3f7f1">
+  <meta name="description" content="Luật chơi và cẩm nang nhanh cho Sàn Kinh Tế Nation Clash.">
+  <title>Nation Clash — Cẩm nang người chơi</title>
+  <style>
+    :root{--ink:#122019;--muted:#607067;--paper:#fbfdf9;--line:#d8e2da;--green:#087a4b;--lime:#c9f04b;--red:#c92d38;--yellow:#f3b61f;--shadow:0 24px 70px rgba(25,48,35,.12)}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;background:radial-gradient(circle at 12% 8%,#e8f6dd 0,transparent 27%),radial-gradient(circle at 90% 24%,#ffefc5 0,transparent 22%),#f1f5f0;line-height:1.45}
+    body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.22;background-image:linear-gradient(rgba(18,32,25,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(18,32,25,.06) 1px,transparent 1px);background-size:32px 32px}
+    .page{position:relative;width:min(1180px,calc(100% - 28px));margin:22px auto 38px;background:rgba(251,253,249,.94);border:1px solid #fff;border-radius:28px;box-shadow:var(--shadow);overflow:hidden}
+    header{padding:24px 30px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+    .brand{font-size:.86rem;font-weight:950;letter-spacing:.14em}.brand span{color:var(--green)}.host-note{font-size:.76rem;color:var(--muted);font-weight:700}
+    .hero{display:grid;grid-template-columns:1.25fr .75fr;gap:28px;padding:52px 46px 38px;align-items:end}.eyebrow{display:inline-flex;gap:8px;align-items:center;margin:0 0 14px;color:var(--green);font-size:.76rem;font-weight:900;letter-spacing:.13em;text-transform:uppercase}.eyebrow:before{content:"";width:28px;height:3px;border-radius:3px;background:var(--lime)}
+    h1{max-width:790px;margin:0;font-size:clamp(2.7rem,6.5vw,6.5rem);line-height:.88;letter-spacing:-.075em}.outline{color:transparent;-webkit-text-stroke:1.5px var(--ink)}.lead{max-width:620px;margin:24px 0 0;color:var(--muted);font-size:clamp(1rem,1.5vw,1.2rem)}
+    .hero-card{padding:22px;border-radius:22px;background:var(--ink);color:#fff;transform:rotate(1.2deg)}.hero-card small{color:#b8c6be;font-weight:800;text-transform:uppercase;letter-spacing:.1em}.hero-card strong{display:block;margin:9px 0 18px;font-size:1.55rem;line-height:1.1}.hero-card p{margin:0;color:#d8e3dc;font-size:.9rem}.pulse{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;background:var(--lime);box-shadow:0 0 0 6px rgba(201,240,75,.12)}
+    .facts{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--line);border-block:1px solid var(--line)}.fact{padding:20px 28px;background:var(--paper)}.fact b{display:block;font-size:1.55rem}.fact span{font-size:.72rem;color:var(--muted);font-weight:800;text-transform:uppercase;letter-spacing:.07em}
+    section{padding:38px 46px}.section-head{display:flex;justify-content:space-between;gap:20px;align-items:end;margin-bottom:22px}.kicker{margin:0;color:var(--green);font-size:.7rem;font-weight:950;letter-spacing:.13em;text-transform:uppercase}.section-head h2{margin:5px 0 0;font-size:clamp(1.8rem,3vw,3rem);line-height:1;letter-spacing:-.045em}.section-head p{max-width:430px;margin:0;color:var(--muted);font-size:.88rem}
+    .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.step{min-height:190px;padding:18px;border:1px solid var(--line);border-radius:18px;background:#fff}.num{display:grid;width:34px;height:34px;place-items:center;border-radius:50%;background:var(--lime);font-weight:950}.step h3{margin:26px 0 8px;font-size:1.05rem}.step p{margin:0;color:var(--muted);font-size:.84rem}
+    .timeline{display:grid;grid-template-columns:repeat(4,1fr);margin-top:14px;border:1px solid var(--line);border-radius:18px;overflow:hidden}.beat{position:relative;padding:20px;border-right:1px solid var(--line)}.beat:last-child{border:0}.beat b{display:block;color:var(--green);font-size:1.2rem}.beat span{font-size:.77rem;color:var(--muted)}.beat.danger b{color:var(--red)}
+    .markets-wrap{background:#122019;color:#fff}.markets-wrap .kicker{color:var(--lime)}.markets-wrap .section-head p{color:#a9b7af}.markets{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.market{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;padding:13px;border:1px solid rgba(255,255,255,.12);border-radius:14px;background:rgba(255,255,255,.045)}.market .flag{font-size:1.4rem}.market b{display:block;font-size:.84rem}.market span{display:block;color:#a9b7af;font-size:.7rem}.market i{font-style:normal;color:var(--lime);font-size:.64rem;font-weight:900;letter-spacing:.05em}
+    .rules{display:grid;grid-template-columns:1fr 1fr;gap:14px}.rule-box{padding:24px;border-radius:20px;border:1px solid var(--line);background:#fff}.rule-box h3{margin:0 0 16px;font-size:1.3rem}.rule{display:grid;grid-template-columns:22px 1fr;gap:9px;margin:11px 0;font-size:.86rem}.check{color:var(--green);font-weight:950}.warn{color:var(--red);font-weight:950}.urgent-demo{margin-top:18px;padding:14px 16px;border:1px solid #ef9aa2;border-left:5px solid var(--red);border-radius:12px;background:#fff0f1}.urgent-demo b{color:#9d1723}.urgent-demo p{margin:3px 0 0;color:#74343a;font-size:.8rem}
+    .formula{display:grid;place-items:center;min-height:100%;padding:26px;text-align:center;border-radius:18px;background:#edf6e8}.formula strong{display:block;font-size:clamp(1.25rem,2.3vw,2rem);letter-spacing:-.04em}.formula span{display:block;margin-top:7px;color:var(--muted);font-size:.8rem}
+    .tips{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.tip{padding:20px;border-top:4px solid var(--green);border-radius:8px 8px 16px 16px;background:#fff;box-shadow:0 8px 25px rgba(25,48,35,.06)}.tip:nth-child(2){border-color:var(--yellow)}.tip:nth-child(3){border-color:var(--red)}.tip b{font-size:1rem}.tip p{margin:7px 0 0;color:var(--muted);font-size:.82rem}
+    footer{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:28px 46px;background:#dff0d7}.final{font-size:clamp(1.3rem,2.3vw,2rem);font-weight:950;letter-spacing:-.04em}.final em{font-style:normal;color:var(--green)}footer small{max-width:420px;color:var(--muted);text-align:right}
+    @media(max-width:820px){.hero{grid-template-columns:1fr;padding:38px 24px 28px}.hero-card{transform:none}.facts{grid-template-columns:1fr 1fr}.steps,.markets{grid-template-columns:1fr 1fr}.timeline{grid-template-columns:1fr 1fr}.beat:nth-child(2){border-right:0}.beat{border-bottom:1px solid var(--line)}section{padding:32px 24px}.section-head{display:block}.section-head p{margin-top:10px}.rules{grid-template-columns:1fr}header{padding:20px 24px}}
+    @media(max-width:520px){.page{width:100%;margin:0;border-radius:0}.host-note{display:none}h1{font-size:3.35rem}.facts,.steps,.markets,.tips{grid-template-columns:1fr}.timeline{grid-template-columns:1fr}.beat{border-right:0}.market{padding:11px}footer{display:block;padding:25px 24px}footer small{display:block;margin-top:9px;text-align:left}}
+    @media print{body{background:#fff}.page{width:100%;margin:0;border:0;box-shadow:none}.hero{padding-top:28px}section{break-inside:avoid}.markets-wrap{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header><div class="brand">NATION <span>CLASH</span> · SÀN KINH TẾ</div><div class="host-note">Cẩm nang nhanh · đọc trong 3 phút</div></header>
+    <div class="hero">
+      <div><p class="eyebrow">Mô phỏng thị trường realtime</p><h1>ĐỌC TIN.<br><span class="outline">GIỮ VỮNG.</span><br>RA QUYẾT ĐỊNH.</h1><p class="lead">Bạn không cần biết chứng khoán từ trước. Hãy quan sát, bàn bạc cùng đội và quản trị 100.000 vốn cá nhân trong một thị trường luôn thay đổi.</p></div>
+      <aside class="hero-card"><small><span class="pulse"></span>Mục tiêu thật sự</small><strong>Không phải đoán đúng mọi nhịp.</strong><p>Đội thắng là đội giữ kỷ luật tốt nhất khi tin tức, giá và tâm lý đám đông cùng gây áp lực.</p></aside>
+    </div>
+    <div class="facts"><div class="fact"><b>15 phút</b><span>Một phiên đấu</span></div><div class="fact"><b>100K</b><span>Vốn mỗi người</span></div><div class="fact"><b>12</b><span>Thị trường</span></div><div class="fact"><b>8 đội</b><span>Xếp hạng công bằng</span></div></div>
+
+    <section>
+      <div class="section-head"><div><p class="kicker">Cách tham gia</p><h2>Bốn việc bạn sẽ làm</h2></div><p>Mỗi người có ví và danh mục riêng. Cùng đội có thể bàn chiến lược nhưng lệnh mua bán không dùng chung tài khoản.</p></div>
+      <div class="steps"><article class="step"><span class="num">1</span><h3>Vào đúng phòng</h3><p>Quét QR do host chiếu, nhập tên và chọn đúng đội. Chỉ host mới bắt đầu hoặc kết thúc phiên.</p></article><article class="step"><span class="num">2</span><h3>Đọc thị trường</h3><p>Xem nến, xu hướng, khối lượng và bản tin. Tác động thật của tin không được công bố trước.</p></article><article class="step"><span class="num">3</span><h3>Mua — bán</h3><p>Chọn mã, nhập số lượng và xác nhận. Không bán khống; mỗi giao dịch có phí 0,15%.</p></article><article class="step"><span class="num">4</span><h3>Quản trị rủi ro</h3><p>Chốt lời, cắt lỗ hoặc giữ tiền mặt. Đừng để một quyết định cảm tính kéo cả chiến lược đi xa.</p></article></div>
+      <div class="timeline"><div class="beat"><b>0:00–0:30</b><span>Làm quen, quan sát giá</span></div><div class="beat"><b>Đợt 1</b><span>1 tin · tín hiệu rõ hơn</span></div><div class="beat"><b>Đợt 2</b><span>2 tin · bắt đầu giao thoa</span></div><div class="beat danger"><b>Từ đợt 3</b><span>1–3 tin · có thể xuất hiện tin khẩn</span></div></div>
+    </section>
+
+    <section class="markets-wrap">
+      <div class="section-head"><div><p class="kicker">Bản đồ tài sản</p><h2>12 ngành để lựa chọn</h2></div><p>Hai mô hình có độ biến động và cơ chế ổn định khác nhau. Không có mã nào luôn an toàn.</p></div>
+      <div class="markets">
+        <div class="market"><span class="flag">🇺🇸</span><div><b>UST · Công nghệ</b><span>Hoa Kỳ</span><i>TƯ BẢN CHỦ NGHĨA</i></div></div><div class="market"><span class="flag">🇯🇵</span><div><b>JPA · Ô tô</b><span>Nhật Bản</span><i>TƯ BẢN CHỦ NGHĨA</i></div></div><div class="market"><span class="flag">🇩🇪</span><div><b>DEM · Chế tạo máy</b><span>Đức</span><i>TƯ BẢN CHỦ NGHĨA</i></div></div><div class="market"><span class="flag">🇬🇧</span><div><b>UKF · Tài chính</b><span>Anh</span><i>TƯ BẢN CHỦ NGHĨA</i></div></div>
+        <div class="market"><span class="flag">🇻🇳</span><div><b>VNE · Năng lượng</b><span>Việt Nam</span><i>ĐỊNH HƯỚNG XHCN</i></div></div><div class="market"><span class="flag">🇨🇳</span><div><b>CNE · TMĐT</b><span>Trung Quốc</span><i>ĐỊNH HƯỚNG XHCN</i></div></div><div class="market"><span class="flag">🇱🇦</span><div><b>LAA · Nông nghiệp</b><span>Lào</span><i>ĐỊNH HƯỚNG XHCN</i></div></div><div class="market"><span class="flag">🇨🇺</span><div><b>CUB · Y tế & dược</b><span>Cuba</span><i>ĐỊNH HƯỚNG XHCN</i></div></div>
+        <div class="market"><span class="flag">🇰🇷</span><div><b>KRS · Bán dẫn</b><span>Hàn Quốc</span><i>TƯ BẢN CHỦ NGHĨA</i></div></div><div class="market"><span class="flag">🇸🇦</span><div><b>SAO · Dầu mỏ</b><span>Ả Rập Xê Út</span><i>TƯ BẢN CHỦ NGHĨA</i></div></div><div class="market"><span class="flag">🇸🇬</span><div><b>SGL · Logistics</b><span>Singapore</span><i>TƯ BẢN CHỦ NGHĨA</i></div></div><div class="market"><span class="flag">🇧🇷</span><div><b>BRF · Thực phẩm</b><span>Brazil</span><i>TƯ BẢN CHỦ NGHĨA</i></div></div>
+      </div>
+    </section>
+
+    <section>
+      <div class="section-head"><div><p class="kicker">Luật cần nhớ</p><h2>Chơi nhanh, nhưng đừng vội</h2></div><p>Giá chịu tác động đồng thời bởi tin tức, xu hướng, cung cầu và tâm lý đám đông.</p></div>
+      <div class="rules"><div class="rule-box"><h3>Cơ chế phiên đấu</h3><div class="rule"><span class="check">✓</span><span>Tin mới xuất hiện mỗi <b>1 phút 30 giây</b>.</span></div><div class="rule"><span class="check">✓</span><span>Khối lượng mua bán có ảnh hưởng, nhưng không thể một mình thao túng giá.</span></div><div class="rule"><span class="check">✓</span><span>Râu nến, đảo chiều và biến động bất ngờ có thể xuất hiện từ giai đoạn sau.</span></div><div class="rule"><span class="warn">!</span><span>Màu đỏ không đồng nghĩa chắc chắn sẽ hồi; màu xanh không đảm bảo tiếp tục tăng.</span></div><div class="urgent-demo"><b>! TIN KHẨN — nền đỏ</b><p>Biến cố hiếm, xuất hiện bất ngờ và có thể làm đảo nhanh kỳ vọng thị trường.</p></div></div><div><div class="formula"><div><strong>Điểm đội = trung bình % lợi nhuận của các thành viên</strong><span>Đội ít người hay đông người đều được so sánh công bằng; không cộng dồn số vốn tuyệt đối.</span></div></div></div></div>
+    </section>
+
+    <section>
+      <div class="section-head"><div><p class="kicker">Ba nguyên tắc sống còn</p><h2>Kỷ luật thắng cảm xúc</h2></div></div>
+      <div class="tips"><div class="tip"><b>Đừng dồn hết vào một câu chuyện</b><p>Phân bổ vốn hoặc giữ một phần tiền mặt giúp bạn còn lựa chọn khi thị trường đổi hướng.</p></div><div class="tip"><b>Đọc tác động dây chuyền</b><p>Dầu tăng có thể làm logistics và ô tô chịu chi phí; bán dẫn có thể kéo công nghệ và TMĐT.</p></div><div class="tip"><b>Không đuổi theo đám đông</b><p>Khi FOMO hoặc hoảng loạn lên cao, hãy kiểm tra lại lý do vào lệnh và ngưỡng chấp nhận lỗ.</p></div></div>
+    </section>
+    <footer><div class="final">Bình tĩnh để <em>nhìn thấy cơ hội.</em></div><small>Mã phòng và QR vào sàn chỉ được host công bố khi lớp sẵn sàng bắt đầu.</small></footer>
+  </main>
+</body>
+</html>

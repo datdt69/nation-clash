@@ -218,7 +218,7 @@ function eventStrip() {
   const game = state.game;
   const events = game.activeEvents;
   const content = events.length
-    ? events.map((event) => `<article class="event-card"><span class="event-icon">${escapeHtml(event.icon)}</span><div><small>${escapeHtml(event.tag)}</small><b>${escapeHtml(event.title)}</b><p>${escapeHtml(event.description)}</p></div></article>`).join("")
+    ? events.map((event) => `<article class="event-card${event.urgent ? " urgent" : ""}"><span class="event-icon">${escapeHtml(event.icon)}</span><div><small>${escapeHtml(event.tag)}</small><b>${escapeHtml(event.title)}</b><p>${escapeHtml(event.description)}</p></div></article>`).join("")
     : `<article class="event-empty"><span class="event-icon">⌛</span><div><b>Thị trường đang tự điều chỉnh</b><small>Chưa có cú sốc mới. Giá vẫn biến động theo cung và cầu.</small></div></article>`;
   return `<section class="event-strip">
     <div class="event-label"><p class="eyebrow">Bản tin thị trường</p><b>${events.length ? `Đợt sự kiện ${game.eventRound}` : "Chờ sự kiện đầu"}</b><small>Sự kiện tiếp theo: <span class="next-event" data-countdown-end="${game.nextEventAt}">--:--</span></small></div>

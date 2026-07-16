@@ -1187,6 +1187,27 @@ select:focus-visible {
   vector-effect: non-scaling-stroke;
 }
 
+.event-card.urgent {
+  border-color: rgba(220, 38, 38, 0.48);
+  background: linear-gradient(135deg, rgba(254, 226, 226, 0.96), rgba(255, 241, 242, 0.92));
+  box-shadow: inset 3px 0 0 #dc2626;
+}
+
+.event-card.urgent .event-icon {
+  border-color: rgba(220, 38, 38, 0.32);
+  background: #dc2626;
+  color: #fff;
+  animation: urgent-pulse 1.8s ease-in-out infinite;
+}
+
+.event-card.urgent small,
+.event-card.urgent b { color: #991b1b; }
+.event-card.urgent p { color: #6b2525; }
+
+@keyframes urgent-pulse {
+  50% { box-shadow: 0 0 0 5px rgba(220, 38, 38, 0.1); }
+}
+
 .candle-body { shape-rendering: crispEdges; }
 .current-price-line {
   stroke: #718077;

@@ -345,6 +345,7 @@ test("cú sốc thanh khoản tạo rút râu và nhịp hồi có kiểm soát"
   game.nextEventAt = 120_000;
   game.markets.forEach((market) => { market.lastFlashAt = 32_000; });
   const market = game.markets[0];
+  market.difficultyPhase = 3;
   market.lastFlashAt = 0;
   const sequence = [0.5, 0.5, 0.5, 0.5, 0, 0, 0.5, 0.5];
   const before = market.price;
@@ -355,6 +356,31 @@ test("cú sốc thanh khoản tạo rút râu và nhịp hồi có kiểm soát"
   assert.equal(market.lastFlashAt, 32_000);
   assert.ok(Math.abs(shocked - before) > market.openPrice * 0.01);
   assert.ok(Math.abs(recovered - before) < Math.abs(shocked - before));
+});
+
+test("hai đợt đầu là giai đoạn làm quen và chưa phát sinh cú rút râu bất ngờ", () => {
+  const { game } = setup(1, { durationMs: 4 * 60_000 });
+  const market = game.markets[0];
+  market.difficultyPhase = 2;
+  market.regimeEndsAt = 0;
+  market.lastFlashAt = 0;
+  market.orderPressure = 1.5;
+  game.lastTickAt = 31_000;
+  game.nextEventAt = 120_000;
+  tick(game, 32_000, () => 0);
+  assert.equal(market.hiddenRegime, "calm");
+  assert.equal(market.regimeDrift, 0);
+  assert.equal(market.lastFlashAt, 0);
+});
+
+test("tin khẩn hiếm thay thế một tin thường và tổng số thẻ vẫn không vượt quá ba", () => {
+  const { game } = setup(1);
+  game.eventRound = 2;
+  const rolls = [0.9, 0.2, 0.3, 0.4, 0.01, 0];
+  triggerEvents(game, 2_000, () => rolls.shift() ?? 0.5);
+  assert.equal(game.activeEvents.length, 3);
+  assert.equal(game.activeEvents.filter((event) => event.urgent).length, 1);
+  assert.equal(game.activeEvents.at(-1).tag, "TIN KHẨN");
 });
 
 test("đồng hồ tâm lý phản ánh áp lực mua bán 30 giây gần nhất", () => {
