@@ -137,13 +137,12 @@ function lobbyHeader(isHost) {
 }
 
 function hostLobby() {
-  const joinUrl = hostMeta.joinUrl || `${location.origin}/?room=${state.code}`;
   return `<main class="lobby-screen screen">
     ${lobbyHeader(true)}
     <section class="lobby-main">
       <div class="join-display panel">
         <div class="qr-shell">${hostMeta.qrDataUrl ? `<img src="${hostMeta.qrDataUrl}" alt="Mã QR vào phòng ${escapeHtml(state.code)}">` : ""}</div>
-        <div class="join-copy"><p class="eyebrow">Quét để tham gia</p><h1>Vào phòng bằng điện thoại</h1><strong class="room-code-large">${escapeHtml(state.code)}</strong><p>Tối đa 56 người, chia thành 8 đội × 7 người. Thành viên cùng đội dùng chung danh mục.</p><div class="join-link"><code>${escapeHtml(joinUrl)}</code><button class="icon-button" data-act="copy" aria-label="Sao chép">⧉</button></div></div>
+        <div class="join-copy compact"><p class="eyebrow">Quét để tham gia</p><strong class="room-code-large">${escapeHtml(state.code)}</strong></div>
       </div>
       <div class="teams-panel panel">
         <div class="panel-heading"><div><p class="eyebrow">Danh sách tham gia</p><h2>8 đội trên sàn</h2></div><span class="player-count"><strong>${state.playersCount}</strong> / 56 người</span></div>
