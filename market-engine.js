@@ -1,10 +1,11 @@
 const STARTING_CASH = 100_000;
 const GAME_DURATION_MS = 10 * 60_000;
-const EVENT_INTERVAL_MS = 60_000;
+const EVENT_INTERVAL_MS = 2 * 60_000;
 const PRICE_TICK_MS = 1_000;
 const HISTORY_LIMIT = 120;
 const TRADING_FEE_RATE = 0.0015;
 const EVENT_IMPACT_MULTIPLIER = 1.8;
+const EVENT_TOTAL_IMPACT_TICKS = 25;
 
 const MODELS = {
   capitalist: {
@@ -235,6 +236,7 @@ function createMarket(definition, now) {
     volume: 0,
     orderPressure: 0,
     eventMomentum: 0,
+    eventDecay: 0.96,
     eventVolatility: 1,
     volatility: model.volatility,
     stabilizer: model.stabilizer,
@@ -242,8 +244,10 @@ function createMarket(definition, now) {
   };
 }
 
-function createPortfolio(team) {
+function createPortfolio(team, player) {
   return {
+    accountId: player.id,
+    playerName: player.nickname,
     teamId: team.id,
     teamName: team.name,
     color: team.color,
@@ -274,7 +278,9 @@ function createGame(teams, options = {}) {
     eventRound: 0,
     tradeSequence: 0,
     markets: MARKET_DEFINITIONS.map((market) => createMarket(market, now)),
-    portfolios: Object.fromEntries(activeTeams.map((team) => [team.id, createPortfolio(team)])),
+    portfolios: Object.fromEntries(activeTeams.flatMap((team) => (
+      team.players.map((player) => [player.id, createPortfolio(team, player)])
+    ))),
     activeEvents: [],
     eventHistory: [],
     tradeTape: [],
@@ -305,7 +311,7 @@ function updateMarketPrice(market, now, random) {
   market.price = roundPrice(Math.max(5, market.price * (1 + percentMove)));
   market.changePct = roundPrice(((market.price - market.openPrice) / market.openPrice) * 100);
   market.orderPressure *= 0.72;
-  market.eventMomentum *= 0.92;
+  market.eventMomentum *= market.eventDecay;
   market.eventVolatility += (1 - market.eventVolatility) * 0.08;
   recordPrice(market, now);
 }
@@ -329,10 +335,14 @@ function archiveEvents(game, at) {
 
 function applyEvent(game, event, at) {
   const affected = [];
+  const durationTicks = Math.max(60, game.eventIntervalMs / PRICE_TICK_MS);
+  const eventDecay = Math.pow(0.05, 1 / durationTicks);
+  const sustainedScale = EVENT_TOTAL_IMPACT_TICKS * (1 - eventDecay);
   for (const [symbol, momentum, volatility, label] of event.impacts) {
     const market = getMarket(game, symbol);
     if (!market) continue;
-    market.eventMomentum += momentum * market.sensitivity * EVENT_IMPACT_MULTIPLIER;
+    market.eventDecay = eventDecay;
+    market.eventMomentum += momentum * market.sensitivity * EVENT_IMPACT_MULTIPLIER * sustainedScale;
     market.eventVolatility += (volatility - 1) * market.sensitivity;
     affected.push({
       symbol: market.symbol,
@@ -344,7 +354,10 @@ function applyEvent(game, event, at) {
     });
     for (const [, targetSymbol, strength] of linkedMarkets(symbol)) {
       const target = getMarket(game, targetSymbol);
-      if (target) target.eventMomentum += momentum * strength * 0.58 * EVENT_IMPACT_MULTIPLIER;
+      if (target) {
+        target.eventDecay = eventDecay;
+        target.eventMomentum += momentum * strength * 0.58 * EVENT_IMPACT_MULTIPLIER * sustainedScale;
+      }
     }
   }
 
@@ -384,17 +397,35 @@ function portfolioValue(game, portfolio) {
 }
 
 function leaderboard(game) {
-  return Object.values(game.portfolios)
-    .map((portfolio) => {
+  const teams = new Map();
+  for (const portfolio of Object.values(game.portfolios)) {
       const netWorth = portfolioValue(game, portfolio);
-      return {
+      const team = teams.get(portfolio.teamId) || {
         teamId: portfolio.teamId,
         teamName: portfolio.teamName,
         color: portfolio.color,
+        totalNetWorth: 0,
+        trades: 0,
+        members: 0,
+      };
+      team.totalNetWorth += netWorth;
+      team.trades += portfolio.trades;
+      team.members += 1;
+      teams.set(portfolio.teamId, team);
+  }
+  return [...teams.values()]
+    .map((team) => {
+      const netWorth = roundPrice(team.totalNetWorth / team.members);
+      const profit = roundPrice(netWorth - STARTING_CASH);
+      return {
+        teamId: team.teamId,
+        teamName: team.teamName,
+        color: team.color,
         netWorth,
-        profit: roundPrice(netWorth - STARTING_CASH),
-        profitPct: roundPrice(((netWorth - STARTING_CASH) / STARTING_CASH) * 100),
-        trades: portfolio.trades,
+        profit,
+        profitPct: roundPrice((profit / STARTING_CASH) * 100),
+        trades: team.trades,
+        members: team.members,
       };
     })
     .sort((a, b) => b.netWorth - a.netWorth || a.teamName.localeCompare(b.teamName, "vi"))
@@ -434,10 +465,10 @@ function tick(game, now = Date.now(), random = Math.random) {
   return { changed, finished: false };
 }
 
-function trade(game, teamId, order = {}, now = Date.now()) {
+function trade(game, accountId, order = {}, now = Date.now()) {
   if (!game || game.phase !== "trading") return { ok: false, message: "Thị trường đã đóng cửa" };
-  const portfolio = game.portfolios[teamId];
-  if (!portfolio) return { ok: false, message: "Không tìm thấy tài khoản của đội" };
+  const portfolio = game.portfolios[accountId];
+  if (!portfolio) return { ok: false, message: "Không tìm thấy tài khoản người chơi" };
   const market = getMarket(game, order.symbol);
   if (!market) return { ok: false, message: "Mã cổ phiếu không hợp lệ" };
   const side = order.side === "sell" ? "sell" : order.side === "buy" ? "buy" : null;
@@ -480,13 +511,13 @@ function trade(game, teamId, order = {}, now = Date.now()) {
     && transaction.side !== side
     && Number(now) - transaction.at <= crowdWindowMs
   )).length;
-  const crowdMultiplier = clamp(1 + recentSameSide * 0.24 - recentOppositeSide * 0.08, 0.75, 2.6);
-  const rawImpact = ((quantity / market.liquidity) * 0.078 + Math.log10(quantity + 1) * 0.00065) * crowdMultiplier;
+  const crowdMultiplier = clamp(1 + recentSameSide * 0.2 - recentOppositeSide * 0.08, 0.75, 2.2);
+  const rawImpact = ((quantity / market.liquidity) * 0.06 + Math.log10(quantity + 1) * 0.00055) * crowdMultiplier;
   const modelDamping = market.model === "socialist" ? 0.72 : 1;
-  const impact = clamp(rawImpact * modelDamping, 0.0003, 0.038);
+  const impact = clamp(rawImpact * modelDamping, 0.0003, 0.025);
   market.price = roundPrice(Math.max(5, market.price * (1 + direction * impact)));
   market.changePct = roundPrice(((market.price - market.openPrice) / market.openPrice) * 100);
-  market.orderPressure += direction * (quantity / market.liquidity) * crowdMultiplier * 1.8;
+  market.orderPressure += direction * (quantity / market.liquidity) * crowdMultiplier * 1.3;
   for (const [, targetSymbol, strength] of linkedMarkets(market.symbol)) {
     const target = getMarket(game, targetSymbol);
     if (target) target.orderPressure += direction * (quantity / market.liquidity) * crowdMultiplier * strength;
@@ -498,7 +529,9 @@ function trade(game, teamId, order = {}, now = Date.now()) {
 
   const transaction = {
     id: `trade-${++game.tradeSequence}`,
-    teamId,
+    accountId,
+    playerName: portfolio.playerName,
+    teamId: portfolio.teamId,
     teamName: portfolio.teamName,
     side,
     symbol: market.symbol,
@@ -530,9 +563,9 @@ function publicMarket(market) {
   };
 }
 
-function publicState(game, viewerTeamId = null) {
+function publicState(game, viewerAccountId = null) {
   if (!game) return null;
-  const viewer = viewerTeamId ? game.portfolios[viewerTeamId] : null;
+  const viewer = viewerAccountId ? game.portfolios[viewerAccountId] : null;
   return {
     phase: game.phase,
     startedAt: game.startedAt,
@@ -550,6 +583,8 @@ function publicState(game, viewerTeamId = null) {
     portfolio: viewer
       ? {
           teamId: viewer.teamId,
+          accountId: viewer.accountId,
+          playerName: viewer.playerName,
           cash: viewer.cash,
           holdings: { ...viewer.holdings },
           averageCost: { ...viewer.averageCost },
