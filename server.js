@@ -149,6 +149,9 @@ io.on("connection", (socket) => {
 
     let player = playerToken ? findPlayer(room, playerToken) : null;
     if (player) {
+      if (player.connected && player.socketId !== socket.id) {
+        return callback({ ok: false, message: "Tài khoản này đang mở ở tab hoặc thiết bị khác. Hãy nhập tên để tạo tài khoản riêng." });
+      }
       player.connected = true;
       player.socketId = socket.id;
       player.nickname = name;

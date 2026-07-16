@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { createTeam, serializeTeam } = require("../game-engine");
+const { TEAM_NUMBERS, createTeam, serializeTeam } = require("../game-engine");
 
 test("tạo đúng tám màu đội và mã đội ổn định", () => {
   const teams = Array.from({ length: 8 }, (_, index) => createTeam(index));
@@ -12,9 +12,10 @@ test("tạo đúng tám màu đội và mã đội ổn định", () => {
     "team-4",
     "team-5",
     "team-6",
-    "team-7",
     "team-8",
+    "team-9",
   ]);
+  assert.deepEqual(TEAM_NUMBERS, [1, 2, 3, 4, 5, 6, 8, 9]);
 });
 
 test("trạng thái công khai chỉ chứa thông tin kết nối cần thiết", () => {

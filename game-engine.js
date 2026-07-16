@@ -9,12 +9,17 @@ const TEAM_PRESETS = [
   { color: "#a73283", accent: "#f7dced" },
 ];
 
+// Đội 7 vận hành màn host, vì vậy tám đội giao dịch dùng các số còn lại.
+const TEAM_NUMBERS = [1, 2, 3, 4, 5, 6, 8, 9];
+
 function createTeam(index) {
   const preset = TEAM_PRESETS[index % TEAM_PRESETS.length];
+  const number = TEAM_NUMBERS[index] ?? index + 1;
   return {
-    id: `team-${index + 1}`,
+    id: `team-${number}`,
     index,
-    name: `Đội ${index + 1}`,
+    number,
+    name: `Đội ${number}`,
     ...preset,
     players: [],
   };
@@ -24,6 +29,7 @@ function serializeTeam(team) {
   return {
     id: team.id,
     index: team.index,
+    number: team.number,
     name: team.name,
     color: team.color,
     accent: team.accent,
@@ -35,4 +41,4 @@ function serializeTeam(team) {
   };
 }
 
-module.exports = { TEAM_PRESETS, createTeam, serializeTeam };
+module.exports = { TEAM_PRESETS, TEAM_NUMBERS, createTeam, serializeTeam };

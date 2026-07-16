@@ -49,7 +49,8 @@ body {
 }
 
 button,
-input {
+input,
+select {
   font: inherit;
 }
 
@@ -64,7 +65,8 @@ button:disabled {
 }
 
 button:focus-visible,
-input:focus-visible {
+input:focus-visible,
+select:focus-visible {
   outline: 2px solid var(--cyan);
   outline-offset: 2px;
 }
@@ -116,7 +118,14 @@ input:focus-visible {
   gap: 11px;
   color: var(--text);
   text-decoration: none;
+  border-radius: 12px;
+  padding: 3px 5px 3px 3px;
+  background: transparent;
+  text-align: left;
+  transition: background 160ms ease, transform 160ms ease;
 }
+
+.brand:hover { background: var(--green-soft); transform: translateY(-1px); }
 
 .brand-mark {
   width: 36px;
@@ -232,10 +241,13 @@ input:focus-visible {
 
 .field select {
   appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, var(--green) 50%), linear-gradient(135deg, var(--green) 50%, transparent 50%);
-  background-position: calc(100% - 19px) 21px, calc(100% - 13px) 21px;
+  border-width: 1.5px;
+  padding-right: 48px;
+  background-image: linear-gradient(45deg, transparent 50%, var(--green) 50%), linear-gradient(135deg, var(--green) 50%, transparent 50%), linear-gradient(to left, var(--surface-2) 42px, transparent 42px);
+  background-position: calc(100% - 20px) 21px, calc(100% - 14px) 21px, 100% 0;
   background-repeat: no-repeat;
-  background-size: 6px 6px;
+  background-size: 6px 6px, 6px 6px, 100% 100%;
+  cursor: pointer;
 }
 
 .field input::placeholder {
@@ -724,28 +736,63 @@ input:focus-visible {
 .host-time-settings {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  border: 1px solid var(--line-soft);
+  border-radius: 13px;
+  padding: 5px;
+  background: var(--surface-2);
 }
 
 .host-time-settings label {
   display: grid;
-  gap: 4px;
+  gap: 5px;
+  min-width: 126px;
+  border-radius: 9px;
+  padding: 6px 8px;
+  background: var(--surface);
   color: var(--muted);
   font-size: 0.62rem;
   font-weight: 800;
   text-transform: uppercase;
 }
 
+.host-time-settings label > span { color: var(--muted); font-size: 0.55rem; letter-spacing: 0.06em; }
+
 .host-time-settings select {
+  appearance: none;
+  width: 100%;
   height: 34px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 0 26px 0 10px;
-  background: var(--surface-2);
+  border: 0;
+  border-radius: 7px;
+  padding: 0 30px 0 10px;
+  background-color: var(--surface-2);
+  background-image: linear-gradient(45deg, transparent 50%, var(--green) 50%), linear-gradient(135deg, var(--green) 50%, transparent 50%);
+  background-position: calc(100% - 15px) 14px, calc(100% - 10px) 14px;
+  background-repeat: no-repeat;
+  background-size: 5px 5px;
   color: var(--text);
   font-size: 0.72rem;
   font-weight: 800;
+  cursor: pointer;
 }
+
+.home-button { min-height: 38px; padding-inline: 12px; }
+
+.confirm-dialog {
+  width: min(92vw, 460px);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 0;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 28px 80px rgba(21, 35, 28, 0.28);
+}
+.confirm-dialog::backdrop { background: rgba(14, 24, 19, 0.46); backdrop-filter: blur(4px); }
+.confirm-dialog form { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 14px; padding: 22px; }
+.confirm-icon { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 12px; background: var(--red-soft); color: var(--red); font-size: 1.2rem; font-weight: 900; }
+.confirm-dialog h2 { margin: 2px 0 7px; font-size: 1.08rem; }
+.confirm-dialog p { margin: 0; color: var(--muted); font-size: 0.78rem; line-height: 1.5; }
+.confirm-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
 
 .player-lobby-main {
   min-height: 0;
@@ -1130,9 +1177,19 @@ input:focus-visible {
 
 .candle-wick,
 .candle-body {
-  stroke-width: 1.6;
+  stroke-width: 1.15;
   vector-effect: non-scaling-stroke;
 }
+
+.candle-body { shape-rendering: crispEdges; }
+.current-price-line {
+  stroke: #718077;
+  stroke-width: 1;
+  stroke-dasharray: 4 4;
+  vector-effect: non-scaling-stroke;
+}
+.current-price-label-bg { fill: #263a31; }
+.current-price-label { fill: #fff; font-size: 13px; font-weight: 800; }
 
 .chart-footer {
   min-width: 0;
@@ -1693,9 +1750,9 @@ input:focus-visible {
 
 .rank-value b,
 .rank-value small { display: block; }
-.rank-value b { font-size: 0.67rem; }
-.rank-value small { margin-top: 2px; color: var(--green); font-size: 0.53rem; font-weight: 800; }
-.rank-value small.down { color: var(--red); }
+.rank-value b { color: var(--green); font-size: 0.67rem; }
+.rank-value b.down { color: var(--red); }
+.rank-value small { margin-top: 2px; color: var(--muted); font-size: 0.53rem; font-weight: 800; }
 
 /* Tổng kết */
 .finish-screen {
@@ -1994,8 +2051,10 @@ input:focus-visible {
   .chart-panel { flex-basis: 372px; }
   .chart-footer { display: none; }
   .chart-panel { grid-template-rows: auto minmax(250px, 1fr); }
-  .portfolio-strip { grid-template-columns: 1fr 1fr; }
-  .portfolio-stat:nth-child(3) { display: none; }
+  .portfolio-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+  .portfolio-stat { padding-inline: 5px; }
+  .portfolio-stat small { font-size: 0.5rem; }
+  .portfolio-stat b { font-size: 0.65rem; }
   .quantity-control { width: 145px; }
 }
 
@@ -2097,8 +2156,10 @@ body {
   .event-card p { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
   .chart-panel { min-height: 470px; }
   .side-panel { grid-template-rows: minmax(150px, 1fr) 330px; }
-  .portfolio-strip { grid-template-columns: 1fr 1fr; }
-  .portfolio-stat:nth-child(3) { display: none; }
+  .portfolio-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+  .portfolio-stat { padding-inline: 6px; }
+  .portfolio-stat small { font-size: 0.55rem; }
+  .portfolio-stat b { font-size: 0.7rem; }
   .order-ticket { padding-block: 7px; }
   .ticket-tabs button { height: 29px; }
   .order-tab { height: 32px; }

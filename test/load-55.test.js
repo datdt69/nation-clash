@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const { performance } = require("node:perf_hooks");
 const { io: createClient } = require("socket.io-client");
 const { server, rooms } = require("../server");
+const { TEAM_NUMBERS } = require("../game-engine");
 
 function emitAck(socket, event, payload) {
   return new Promise((resolve) => {
@@ -48,7 +49,7 @@ test("benchmark 55 người kết nối, vào 8 đội và nhận state realtime
   const joins = await Promise.all(clients.map((client, index) => emitAck(client, "player:join", {
     code: created.code,
     nickname: `Học sinh ${index + 1}`,
-    teamId: `team-${(index % 8) + 1}`,
+    teamId: `team-${TEAM_NUMBERS[index % TEAM_NUMBERS.length]}`,
   })));
   const joinedAt = performance.now();
 

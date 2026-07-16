@@ -1,6 +1,6 @@
 # Sàn Kinh Tế
 
-Trò chơi giao dịch cổ phiếu mô phỏng theo thời gian thực dành cho lớp học. Tối đa 56 người chia thành 8 đội, mỗi đội tối đa 7 thành viên và dùng chung một danh mục.
+Trò chơi giao dịch cổ phiếu mô phỏng theo thời gian thực dành cho lớp học. Tối đa 56 người chia thành 8 đội giao dịch (đội 1–6, 8, 9), mỗi đội tối đa 7 thành viên và mỗi người có một danh mục riêng.
 
 > Các quốc gia, mã và mức giá trong game chỉ là dữ liệu mô phỏng phục vụ học tập, không phải dữ liệu chứng khoán hay khuyến nghị đầu tư.
 
@@ -8,7 +8,7 @@ Trò chơi giao dịch cổ phiếu mô phỏng theo thời gian thực dành ch
 
 - Người điều khiển tạo phòng, chiếu mã QR và mã phòng lên màn hình lớn.
 - Host có thể mở thị trường ngay từ 1 người để kiểm thử.
-- Tối đa 56 người tham gia bằng điện thoại, chọn một trong 8 đội; mỗi đội nhận `100.000` vốn mô phỏng.
+- Tối đa 56 người tham gia bằng điện thoại, chọn một trong 8 đội giao dịch; mỗi người nhận `100.000` vốn mô phỏng và đội được xếp hạng theo phần trăm tài sản trung bình.
 - Mười hai mã đại diện cho mười hai ngành/quốc gia và liên kết với nhau theo chuỗi cung ứng, từ công nghệ, bán dẫn, dầu mỏ và logistics đến năng lượng, nông nghiệp, thực phẩm và y tế.
 - Giá thay đổi mỗi giây theo nhiễu thị trường, cung–cầu, thanh khoản, giao dịch của người chơi và sự kiện kinh tế.
 - Sự kiện đầu xuất hiện sau 15 giây; sau đó máy chủ chọn ngẫu nhiên 1–3 sự kiện theo chu kỳ host cấu hình (mặc định 60 giây).

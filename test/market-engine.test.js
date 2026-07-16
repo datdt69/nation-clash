@@ -60,6 +60,23 @@ test("hai người cùng đội có ví riêng và đội xếp hạng theo tài
   assert.equal(team.netWorth, Math.round(expectedAverage * 100) / 100);
 });
 
+test("xếp hạng công bằng khi các đội có số thành viên khác nhau", () => {
+  const teams = Array.from({ length: 8 }, (_, index) => createTeam(index));
+  teams[0].players.push({ id: "solo", nickname: "Một người" });
+  teams[1].players.push({ id: "pair-a", nickname: "Hai A" }, { id: "pair-b", nickname: "Hai B" });
+  const game = createGame(teams, { now: 1_000 });
+  game.portfolios.solo.cash += 10_000;
+  game.portfolios["pair-a"].cash += 20_000;
+  const board = leaderboard(game);
+  const solo = board.find((entry) => entry.teamId === "team-1");
+  const pair = board.find((entry) => entry.teamId === "team-2");
+  assert.equal(solo.members, 1);
+  assert.equal(pair.members, 2);
+  assert.equal(solo.profitPct, 10);
+  assert.equal(pair.profitPct, 10);
+  assert.equal(solo.netWorth, pair.netWorth);
+});
+
 test("lệnh mua cập nhật tiền, cổ phiếu và đẩy giá lên", () => {
   const { game } = setup(2);
   const market = game.markets.find((entry) => entry.symbol === "VNE");
@@ -105,6 +122,73 @@ test("bốn người all-in không thể bẻ giá vượt quá xu hướng sự
   const sellMove = (peak - market.price) / peak;
   assert.ok(sellMove > 0);
   assert.ok(sellMove < 0.035);
+});
+
+test("50 người cùng all-in chỉ tạo áp lực thanh khoản hữu hạn", () => {
+  const teams = Array.from({ length: 8 }, (_, index) => createTeam(index));
+  for (let index = 0; index < 50; index += 1) {
+    teams[index % teams.length].players.push({ id: `crowd-${index}`, nickname: `Người ${index + 1}` });
+  }
+  const game = createGame(teams, { now: 1_000 });
+  const market = game.markets.find((entry) => entry.symbol === "VNE");
+  const before = market.price;
+  for (let index = 0; index < 50; index += 1) {
+    const accountId = `crowd-${index}`;
+    const quantity = Math.floor(game.portfolios[accountId].cash / (market.price * (1 + 0.0015)));
+    assert.equal(trade(game, accountId, { symbol: "VNE", side: "buy", quantity }, 2_000 + index * 20).ok, true);
+  }
+  assert.ok((market.price - before) / before < 0.08);
+  assert.ok(market.orderPressure <= 1.2);
+});
+
+test("giá luôn nằm trong biên dao động của phiên dù news kéo dài", () => {
+  const { game } = setup(3, { durationMs: 10 * 60_000 });
+  let seed = 7;
+  const random = () => {
+    seed = (Math.imul(seed, 1_664_525) + 1_013_904_223) >>> 0;
+    return seed / 4_294_967_296;
+  };
+  tick(game, game.endsAt, random);
+  for (const market of game.markets) {
+    const band = market.model === "socialist" ? 0.18 : 0.25;
+    assert.ok(market.price >= market.openPrice * (1 - band) - 0.01);
+    assert.ok(market.price <= market.openPrice * (1 + band) + 0.01);
+  }
+});
+
+test("lịch sử OHLC lưu high-low để nến có râu từ biến động nội kỳ", () => {
+  const { game } = setup(1);
+  const market = game.markets[0];
+  assert.ok(market.history.some((point) => point.high > point.price || point.low < point.price));
+  const before = market.history.at(-1);
+  trade(game, "p0", { symbol: market.symbol, side: "buy", quantity: 10 }, before.at + 100);
+  const after = market.history.at(-1);
+  assert.ok(after.high >= after.price);
+  assert.ok(after.low <= after.price);
+});
+
+test("lịch sử mở cửa sideway ngẫu nhiên, không chạy theo vòng cung hình sin", () => {
+  const { game } = setup(1);
+  for (const market of game.markets) {
+    const directions = market.history.slice(1).map((point, index) => (
+      Math.sign(point.price - market.history[index].price)
+    )).filter(Boolean);
+    let reversals = 0;
+    let longestRun = 0;
+    let run = 0;
+    let previous = 0;
+    for (const direction of directions) {
+      if (previous && direction !== previous) {
+        reversals += 1;
+        run = 0;
+      }
+      run += 1;
+      longestRun = Math.max(longestRun, run);
+      previous = direction;
+    }
+    assert.ok(reversals >= 30, `${market.symbol} thiếu nhịp đảo chiều`);
+    assert.ok(longestRun <= 12, `${market.symbol} chạy một chiều quá lâu`);
+  }
 });
 
 test("lệnh mua mã nguồn truyền áp lực sang ngành liên quan", () => {
@@ -208,7 +292,7 @@ test("phân tích chỉ xuất hiện sau khi sự kiện cũ kết thúc", () =
   assert.match(state.eventHistory[0].analysis, /ngành|Hoa Kỳ/i);
 });
 
-test("kết thúc trận xếp hạng theo tổng tài sản", () => {
+test("kết thúc trận xếp hạng theo phần trăm tài sản trung bình", () => {
   const { game } = setup(3);
   game.portfolios.p1.cash += 5_000;
   finishGame(game, 5_000);

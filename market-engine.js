@@ -7,6 +7,8 @@ const HISTORY_LIMIT = 120;
 const TRADING_FEE_RATE = 0.0015;
 const EVENT_IMPACT_MULTIPLIER = 1.8;
 const EVENT_TOTAL_IMPACT_TICKS = 25;
+const CAPITALIST_PRICE_BAND = 0.25;
+const SOCIALIST_PRICE_BAND = 0.18;
 
 const MODELS = {
   capitalist: {
@@ -218,12 +220,47 @@ const safeRandom = (random) => clamp(Number(random()) || 0, 0, 0.999999);
 
 function seededHistory(definition, now) {
   const seed = definition.symbol.split("").reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  let state = (seed * 2_654_435_761) >>> 0;
+  const random = () => {
+    state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
+    return state / 4_294_967_296;
+  };
   const history = [];
+  let price = definition.openPrice;
+  let momentum = 0;
   for (let offset = -(HISTORY_LIMIT - 1); offset <= 0; offset += 1) {
-    const wave = offset === 0 ? 0 : Math.sin((offset + seed) * 0.63) * 0.0025;
-    history.push({ at: now + offset * PRICE_TICK_MS, price: roundPrice(definition.openPrice * (1 + wave)) });
+    const open = price;
+    const shock = (random() + random() + random() - 1.5) * 0.00115;
+    momentum = momentum * 0.28 + shock;
+    price *= 1 + momentum;
+    const wickRange = definition.openPrice * (0.00018 + random() * 0.00048);
+    history.push({
+      at: now + offset * PRICE_TICK_MS,
+      price,
+      high: Math.max(open, price) + wickRange * random(),
+      low: Math.min(open, price) - wickRange * random(),
+    });
+  }
+  const scale = definition.openPrice / history.at(-1).price;
+  for (const point of history) {
+    point.price = roundPrice(point.price * scale);
+    point.high = roundPrice(point.high * scale);
+    point.low = roundPrice(point.low * scale);
   }
   return history;
+}
+
+function priceBounds(market) {
+  const band = market.model === "socialist" ? SOCIALIST_PRICE_BAND : CAPITALIST_PRICE_BAND;
+  return {
+    floor: market.openPrice * (1 - band),
+    ceiling: market.openPrice * (1 + band),
+  };
+}
+
+function boundedPrice(market, price) {
+  const { floor, ceiling } = priceBounds(market);
+  return roundPrice(clamp(price, floor, ceiling));
 }
 
 function createMarket(definition, now) {
@@ -239,6 +276,7 @@ function createMarket(definition, now) {
     eventMomentum: 0,
     eventDecay: 0.96,
     eventVolatility: 1,
+    returnMomentum: 0,
     volatility: model.volatility,
     stabilizer: model.stabilizer,
     history: seededHistory(definition, now),
@@ -295,21 +333,29 @@ function getMarket(game, symbol) {
 
 function recordPrice(market, at) {
   const last = market.history.at(-1);
-  const point = { at, price: market.price };
-  if (last && Math.floor(last.at / PRICE_TICK_MS) === Math.floor(at / PRICE_TICK_MS)) market.history[market.history.length - 1] = point;
-  else market.history.push(point);
+  if (last && Math.floor(last.at / PRICE_TICK_MS) === Math.floor(at / PRICE_TICK_MS)) {
+    const previousPrice = last.price;
+    last.at = at;
+    last.price = market.price;
+    last.high = Math.max(Number(last.high ?? previousPrice), market.price);
+    last.low = Math.min(Number(last.low ?? previousPrice), market.price);
+  } else {
+    market.history.push({ at, price: market.price, high: market.price, low: market.price });
+  }
   if (market.history.length > HISTORY_LIMIT) market.history.splice(0, market.history.length - HISTORY_LIMIT);
 }
 
 function updateMarketPrice(market, now, random) {
   const model = MODELS[market.model];
-  const noise = (safeRandom(random) * 2 - 1) * market.volatility * market.eventVolatility;
+  const gaussianNoise = safeRandom(random) + safeRandom(random) + safeRandom(random) - 1.5;
+  const noise = gaussianNoise * market.volatility * market.eventVolatility * 1.18;
   const meanReversion = ((market.fundamental - market.price) / market.fundamental) * model.stabilizer;
   const demand = clamp(market.orderPressure, -1.5, 1.5) * (market.model === "socialist" ? 0.0011 : 0.00155);
-  const microDrift = (safeRandom(random) - 0.485) * 0.00018;
-  const percentMove = clamp(noise + meanReversion + demand + market.eventMomentum + microDrift, -0.08, 0.08);
+  const microDrift = (safeRandom(random) - 0.5) * 0.00024;
+  market.returnMomentum = clamp(market.returnMomentum * 0.32 + noise * 0.16, -0.0025, 0.0025);
+  const percentMove = clamp(noise + market.returnMomentum + meanReversion + demand + market.eventMomentum + microDrift, -0.08, 0.08);
 
-  market.price = roundPrice(Math.max(5, market.price * (1 + percentMove)));
+  market.price = boundedPrice(market, market.price * (1 + percentMove));
   market.changePct = roundPrice(((market.price - market.openPrice) / market.openPrice) * 100);
   market.orderPressure *= 0.72;
   market.eventMomentum *= market.eventDecay;
@@ -338,12 +384,17 @@ function applyEvent(game, event, at) {
   const affected = [];
   const durationTicks = Math.max(60, game.eventIntervalMs / PRICE_TICK_MS);
   const eventDecay = Math.pow(0.05, 1 / durationTicks);
-  const sustainedScale = EVENT_TOTAL_IMPACT_TICKS * (1 - eventDecay);
+  // Tin tức tạo xu hướng có nhịp hồi, không ép giá chạy thành một đường cong trơn.
+  const sustainedScale = 0.2 + EVENT_TOTAL_IMPACT_TICKS * (1 - eventDecay) * 0.08;
   for (const [symbol, momentum, volatility, label] of event.impacts) {
     const market = getMarket(game, symbol);
     if (!market) continue;
     market.eventDecay = eventDecay;
-    market.eventMomentum += momentum * market.sensitivity * EVENT_IMPACT_MULTIPLIER * sustainedScale;
+    market.eventMomentum = clamp(
+      market.eventMomentum + momentum * market.sensitivity * EVENT_IMPACT_MULTIPLIER * sustainedScale,
+      -0.0024,
+      0.0024,
+    );
     market.eventVolatility += (volatility - 1) * market.sensitivity;
     affected.push({
       symbol: market.symbol,
@@ -357,7 +408,11 @@ function applyEvent(game, event, at) {
       const target = getMarket(game, targetSymbol);
       if (target) {
         target.eventDecay = eventDecay;
-        target.eventMomentum += momentum * strength * 0.58 * EVENT_IMPACT_MULTIPLIER * sustainedScale;
+        target.eventMomentum = clamp(
+          target.eventMomentum + momentum * strength * 0.58 * EVENT_IMPACT_MULTIPLIER * sustainedScale,
+          -0.0015,
+          0.0015,
+        );
       }
     }
   }
@@ -512,16 +567,24 @@ function trade(game, accountId, order = {}, now = Date.now()) {
     && transaction.side !== side
     && Number(now) - transaction.at <= crowdWindowMs
   )).length;
-  const crowdMultiplier = clamp(1 + recentSameSide * 0.08 - recentOppositeSide * 0.05, 0.75, 1.5);
-  const rawImpact = ((quantity / market.liquidity) * 0.022 + Math.log10(quantity + 1) * 0.0002) * crowdMultiplier;
+  const crowdMultiplier = clamp(1 + recentSameSide * 0.018 - recentOppositeSide * 0.025, 0.82, 1.18);
+  const rawImpact = ((quantity / market.liquidity) * 0.003 + Math.log10(quantity + 1) * 0.00004) * crowdMultiplier;
   const modelDamping = market.model === "socialist" ? 0.72 : 1;
-  const impact = clamp(rawImpact * modelDamping, 0.00015, 0.012);
-  market.price = roundPrice(Math.max(5, market.price * (1 + direction * impact)));
+  const impact = clamp(rawImpact * modelDamping, 0.00008, 0.0025);
+  market.price = boundedPrice(market, market.price * (1 + direction * impact));
   market.changePct = roundPrice(((market.price - market.openPrice) / market.openPrice) * 100);
-  market.orderPressure += direction * (quantity / market.liquidity) * crowdMultiplier * 0.72;
+  market.orderPressure = clamp(
+    market.orderPressure + direction * (quantity / market.liquidity) * crowdMultiplier * 0.32,
+    -1.2,
+    1.2,
+  );
   for (const [, targetSymbol, strength] of linkedMarkets(market.symbol)) {
     const target = getMarket(game, targetSymbol);
-    if (target) target.orderPressure += direction * (quantity / market.liquidity) * crowdMultiplier * strength;
+    if (target) target.orderPressure = clamp(
+      target.orderPressure + direction * (quantity / market.liquidity) * crowdMultiplier * strength * 0.35,
+      -0.65,
+      0.65,
+    );
   }
   market.volume += quantity;
   portfolio.feesPaid = roundPrice(portfolio.feesPaid + fee);
