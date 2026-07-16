@@ -1,4 +1,4 @@
-# Chợ Nói Dối
+# Liar Market
 
 Trò chơi đấu trí theo thời gian thực cho lớp học, minh họa sự khác nhau giữa kinh tế thị trường tư bản chủ nghĩa với kinh tế thị trường định hướng xã hội chủ nghĩa.
 
