@@ -4,6 +4,7 @@ const EVENT_INTERVAL_MS = 60_000;
 const PRICE_TICK_MS = 1_000;
 const HISTORY_LIMIT = 120;
 const TRADING_FEE_RATE = 0.0015;
+const EVENT_IMPACT_MULTIPLIER = 1.8;
 
 const MODELS = {
   capitalist: {
@@ -331,7 +332,7 @@ function applyEvent(game, event, at) {
   for (const [symbol, momentum, volatility, label] of event.impacts) {
     const market = getMarket(game, symbol);
     if (!market) continue;
-    market.eventMomentum += momentum * market.sensitivity;
+    market.eventMomentum += momentum * market.sensitivity * EVENT_IMPACT_MULTIPLIER;
     market.eventVolatility += (volatility - 1) * market.sensitivity;
     affected.push({
       symbol: market.symbol,
@@ -343,7 +344,7 @@ function applyEvent(game, event, at) {
     });
     for (const [, targetSymbol, strength] of linkedMarkets(symbol)) {
       const target = getMarket(game, targetSymbol);
-      if (target) target.eventMomentum += momentum * strength * 0.58;
+      if (target) target.eventMomentum += momentum * strength * 0.58 * EVENT_IMPACT_MULTIPLIER;
     }
   }
 
@@ -479,10 +480,10 @@ function trade(game, teamId, order = {}, now = Date.now()) {
     && transaction.side !== side
     && Number(now) - transaction.at <= crowdWindowMs
   )).length;
-  const crowdMultiplier = clamp(1 + recentSameSide * 0.28 - recentOppositeSide * 0.08, 0.75, 3.25);
-  const rawImpact = ((quantity / market.liquidity) * 0.095 + Math.log10(quantity + 1) * 0.00075) * crowdMultiplier;
+  const crowdMultiplier = clamp(1 + recentSameSide * 0.24 - recentOppositeSide * 0.08, 0.75, 2.6);
+  const rawImpact = ((quantity / market.liquidity) * 0.078 + Math.log10(quantity + 1) * 0.00065) * crowdMultiplier;
   const modelDamping = market.model === "socialist" ? 0.72 : 1;
-  const impact = clamp(rawImpact * modelDamping, 0.0003, 0.055);
+  const impact = clamp(rawImpact * modelDamping, 0.0003, 0.038);
   market.price = roundPrice(Math.max(5, market.price * (1 + direction * impact)));
   market.changePct = roundPrice(((market.price - market.openPrice) / market.openPrice) * 100);
   market.orderPressure += direction * (quantity / market.liquidity) * crowdMultiplier * 1.8;
@@ -596,6 +597,7 @@ module.exports = {
   GAME_DURATION_MS,
   EVENT_INTERVAL_MS,
   TRADING_FEE_RATE,
+  EVENT_IMPACT_MULTIPLIER,
   createGame,
   tick,
   trade,
