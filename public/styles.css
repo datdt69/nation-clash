@@ -1212,7 +1212,7 @@ input:focus-visible {
 .quotes-list {
   height: calc(100% - 45px);
   display: grid;
-  grid-template-rows: repeat(8, minmax(42px, 1fr));
+  grid-template-rows: repeat(12, minmax(42px, 1fr));
   overflow-y: auto;
 }
 
