@@ -31,7 +31,28 @@ const MARKET_DEFINITIONS = [
   { symbol: "CNE", sector: "Thương mại điện tử", country: "Trung Quốc", flag: "🇨🇳", model: "socialist", openPrice: 124.5, liquidity: 5_700, sensitivity: 1.02 },
   { symbol: "LAA", sector: "Nông nghiệp", country: "Lào", flag: "🇱🇦", model: "socialist", openPrice: 72.6, liquidity: 3_400, sensitivity: 0.88 },
   { symbol: "CUB", sector: "Y tế & dược phẩm", country: "Cuba", flag: "🇨🇺", model: "socialist", openPrice: 68.4, liquidity: 3_100, sensitivity: 0.84 },
+  { symbol: "KRS", sector: "Bán dẫn", country: "Hàn Quốc", flag: "🇰🇷", model: "capitalist", openPrice: 174.2, liquidity: 5_100, sensitivity: 1.14 },
+  { symbol: "SAO", sector: "Dầu mỏ", country: "Ả Rập Xê Út", flag: "🇸🇦", model: "capitalist", openPrice: 112.7, liquidity: 4_700, sensitivity: 1.18 },
+  { symbol: "SGL", sector: "Logistics", country: "Singapore", flag: "🇸🇬", model: "capitalist", openPrice: 138.5, liquidity: 4_600, sensitivity: 1.06 },
+  { symbol: "BRF", sector: "Thực phẩm", country: "Brazil", flag: "🇧🇷", model: "capitalist", openPrice: 84.3, liquidity: 3_800, sensitivity: 0.94 },
 ];
+
+// Một cú sốc ở mã nguồn truyền sang mã đích theo chuỗi cung ứng và dòng vốn.
+// Hệ số âm mô phỏng chi phí đầu vào tăng; hệ số dương mô phỏng nhu cầu hoặc tâm lý lan tỏa.
+const MARKET_LINKS = [
+  ["SAO", "VNE", 0.62], ["SAO", "JPA", -0.24], ["SAO", "DEM", -0.2], ["SAO", "SGL", -0.3],
+  ["VNE", "DEM", 0.18], ["VNE", "SGL", 0.16],
+  ["KRS", "UST", 0.52], ["KRS", "JPA", 0.38], ["KRS", "CNE", 0.3],
+  ["UST", "KRS", 0.4], ["UST", "CNE", 0.27],
+  ["SGL", "CNE", 0.38], ["SGL", "JPA", 0.24], ["SGL", "DEM", 0.22], ["SGL", "LAA", 0.18], ["SGL", "BRF", 0.18],
+  ["LAA", "BRF", 0.34], ["BRF", "CNE", 0.16], ["CNE", "SGL", 0.24],
+  ["UKF", "UST", 0.2], ["UKF", "DEM", 0.18], ["UKF", "SGL", 0.16],
+  ["CUB", "BRF", 0.1], ["BRF", "CUB", 0.12],
+];
+
+function linkedMarkets(symbol) {
+  return MARKET_LINKS.filter(([source]) => source === symbol);
+}
 
 const EVENT_CATALOG = [
   {
@@ -56,7 +77,7 @@ const EVENT_CATALOG = [
     description: "Năng suất tăng nhanh, vốn đầu tư đổ vào doanh nghiệp công nghệ và tự động hóa.",
     analysis: "Công nghệ Hoa Kỳ và thương mại điện tử Trung Quốc hưởng lợi trực tiếp; ô tô Nhật Bản và chế tạo máy Đức tăng nhờ nhu cầu tự động hóa.",
     impacts: [
-      ["UST", 0.0065, 1.55, "Tăng rất mạnh"], ["CNE", 0.0055, 1.28, "Tăng mạnh"],
+      ["UST", 0.0065, 1.55, "Tăng rất mạnh"], ["KRS", 0.006, 1.52, "Tăng rất mạnh"], ["CNE", 0.0055, 1.28, "Tăng mạnh"],
       ["JPA", 0.0028, 1.18, "Tăng"], ["DEM", 0.0032, 1.2, "Tăng"],
     ],
   },
@@ -69,6 +90,7 @@ const EVENT_CATALOG = [
     analysis: "Tài chính Anh chịu cú sốc trực tiếp; công nghệ Hoa Kỳ và các ngành thâm dụng vốn giảm theo thanh khoản, trong khi nông nghiệp Lào và y tế Cuba ít nhạy hơn.",
     impacts: [
       ["UKF", -0.008, 2.15, "Giảm rất mạnh"], ["UST", -0.0038, 1.45, "Giảm"],
+      ["SGL", -0.0032, 1.34, "Giảm"],
       ["JPA", -0.0028, 1.3, "Giảm"], ["DEM", -0.0026, 1.28, "Giảm"],
       ["LAA", -0.0008, 1.03, "Ít ảnh hưởng"], ["CUB", -0.0005, 1.02, "Ít ảnh hưởng"],
     ],
@@ -82,7 +104,7 @@ const EVENT_CATALOG = [
     analysis: "Năng lượng Việt Nam và chế tạo máy Đức tăng nhờ hạ tầng; nông nghiệp Lào hưởng lợi từ logistics, còn tài chính Anh tăng nhẹ qua nhu cầu vốn.",
     impacts: [
       ["VNE", 0.006, 0.86, "Tăng rất mạnh"], ["DEM", 0.004, 1.12, "Tăng mạnh"],
-      ["LAA", 0.0035, 0.9, "Tăng"], ["UKF", 0.0015, 1.05, "Tăng nhẹ"],
+      ["SGL", 0.0036, 1.08, "Tăng"], ["LAA", 0.0035, 0.9, "Tăng"], ["UKF", 0.0015, 1.05, "Tăng nhẹ"],
     ],
   },
   {
@@ -143,7 +165,8 @@ const EVENT_CATALOG = [
     analysis: "Ô tô Nhật Bản và chế tạo máy Đức giảm mạnh do thiếu linh kiện; thương mại điện tử Trung Quốc giảm theo logistics, còn năng lượng Việt Nam tăng vì giá đầu vào.",
     impacts: [
       ["JPA", -0.006, 1.75, "Giảm rất mạnh"], ["DEM", -0.0058, 1.68, "Giảm mạnh"],
-      ["CNE", -0.0038, 1.28, "Giảm"], ["VNE", 0.0042, 1.3, "Tăng mạnh"],
+      ["SGL", -0.0062, 1.72, "Giảm rất mạnh"], ["KRS", -0.0048, 1.55, "Giảm mạnh"],
+      ["CNE", -0.0038, 1.28, "Giảm"], ["VNE", 0.0042, 1.3, "Tăng mạnh"], ["SAO", 0.005, 1.48, "Tăng mạnh"],
     ],
   },
   {
@@ -181,7 +204,7 @@ const EVENT_CATALOG = [
     impacts: [
       ["CNE", 0.006, 1.25, "Tăng rất mạnh"], ["JPA", 0.0045, 1.25, "Tăng mạnh"],
       ["UST", 0.0042, 1.3, "Tăng mạnh"], ["LAA", 0.0028, 0.88, "Tăng"],
-      ["CUB", 0.0022, 0.86, "Tăng nhẹ"],
+      ["BRF", 0.0034, 1.02, "Tăng"], ["CUB", 0.0022, 0.86, "Tăng nhẹ"],
     ],
   },
 ];
@@ -318,6 +341,10 @@ function applyEvent(game, event, at) {
       direction: momentum > 0 ? "up" : momentum < 0 ? "down" : "flat",
       label,
     });
+    for (const [, targetSymbol, strength] of linkedMarkets(symbol)) {
+      const target = getMarket(game, targetSymbol);
+      if (target) target.eventMomentum += momentum * strength * 0.58;
+    }
   }
 
   return {
@@ -459,6 +486,10 @@ function trade(game, teamId, order = {}, now = Date.now()) {
   market.price = roundPrice(Math.max(5, market.price * (1 + direction * impact)));
   market.changePct = roundPrice(((market.price - market.openPrice) / market.openPrice) * 100);
   market.orderPressure += direction * (quantity / market.liquidity) * crowdMultiplier * 1.8;
+  for (const [, targetSymbol, strength] of linkedMarkets(market.symbol)) {
+    const target = getMarket(game, targetSymbol);
+    if (target) target.orderPressure += direction * (quantity / market.liquidity) * crowdMultiplier * strength;
+  }
   market.volume += quantity;
   portfolio.feesPaid = roundPrice(portfolio.feesPaid + fee);
   portfolio.trades += 1;
@@ -559,6 +590,7 @@ function winner(game) {
 module.exports = {
   MODELS,
   MARKET_DEFINITIONS,
+  MARKET_LINKS,
   EVENT_CATALOG,
   STARTING_CASH,
   GAME_DURATION_MS,

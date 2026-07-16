@@ -83,7 +83,7 @@ function landing() {
     <section class="landing-hero">
       <div class="landing-topline">${brand()}<span class="live-chip">Giá cập nhật mỗi giây</span></div>
       <div class="landing-copy">
-        <p class="eyebrow">8 đội · tối đa 56 người · 8 ngành</p>
+        <p class="eyebrow">8 đội · tối đa 56 người · 12 ngành</p>
         <h1>Đọc biến động.<br><span>Chốt quyết định.</span></h1>
         <p>Giao dịch tám ngành nghề của tám quốc gia, phản ứng với các cú sốc kinh tế và khám phá cách hai mô hình thị trường xử lý cùng một vấn đề.</p>
       </div>
@@ -293,7 +293,7 @@ function quoteCard(market) {
 }
 
 function quotesPanel() {
-  return `<section class="quotes-panel panel"><div class="side-heading"><b>8 ngành giao dịch</b><small>Ghi rõ quốc gia</small></div><div class="quotes-list">${state.game.markets.map(quoteCard).join("")}</div></section>`;
+  return `<section class="quotes-panel panel"><div class="side-heading"><b>12 ngành giao dịch</b><small>Tác động liên thị trường</small></div><div class="quotes-list">${state.game.markets.map(quoteCard).join("")}</div></section>`;
 }
 
 function leaderboardPanel() {

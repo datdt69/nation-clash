@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const { createTeam } = require("../game-engine");
 const {
   MARKET_DEFINITIONS,
+  MARKET_LINKS,
   STARTING_CASH,
   EVENT_INTERVAL_MS,
   createGame,
@@ -22,13 +23,14 @@ function setup(teamCount = 3, options = {}) {
   return { teams, game: createGame(teams, { now: 1_000, ...options }) };
 }
 
-test("có đúng 8 ngành của 8 quốc gia, chia đều hai mô hình", () => {
-  assert.equal(MARKET_DEFINITIONS.length, 8);
-  assert.equal(MARKET_DEFINITIONS.filter((market) => market.model === "capitalist").length, 4);
+test("có đúng 12 ngành gắn với 12 quốc gia", () => {
+  assert.equal(MARKET_DEFINITIONS.length, 12);
+  assert.equal(MARKET_DEFINITIONS.filter((market) => market.model === "capitalist").length, 8);
   assert.equal(MARKET_DEFINITIONS.filter((market) => market.model === "socialist").length, 4);
-  assert.equal(new Set(MARKET_DEFINITIONS.map((market) => market.symbol)).size, 8);
-  assert.equal(new Set(MARKET_DEFINITIONS.map((market) => market.country)).size, 8);
+  assert.equal(new Set(MARKET_DEFINITIONS.map((market) => market.symbol)).size, 12);
+  assert.equal(new Set(MARKET_DEFINITIONS.map((market) => market.country)).size, 12);
   assert.ok(MARKET_DEFINITIONS.every((market) => market.sector));
+  assert.ok(MARKET_LINKS.length >= 20);
 });
 
 test("mỗi đội có 100.000 vốn và danh mục riêng", () => {
@@ -36,7 +38,7 @@ test("mỗi đội có 100.000 vốn và danh mục riêng", () => {
   const player = publicState(game, "team-1");
   const host = publicState(game);
   assert.equal(player.portfolio.cash, STARTING_CASH);
-  assert.equal(Object.keys(player.portfolio.holdings).length, 8);
+  assert.equal(Object.keys(player.portfolio.holdings).length, 12);
   assert.equal(host.portfolio, null);
   assert.equal(player.leaderboard.length, 2);
 });
@@ -62,6 +64,17 @@ test("nhiều lệnh cùng chiều trong 6 giây tạo hiệu ứng đám đông
   assert.ok(second.transaction.impactPct > first.transaction.impactPct);
   assert.ok(third.transaction.impactPct > second.transaction.impactPct);
   assert.equal(third.transaction.crowdLevel, 3);
+});
+
+test("lệnh mua mã nguồn truyền áp lực sang ngành liên quan", () => {
+  const { game } = setup(2);
+  const energy = game.markets.find((market) => market.symbol === "VNE");
+  const machinery = game.markets.find((market) => market.symbol === "DEM");
+  const before = machinery.orderPressure;
+  const result = trade(game, "team-1", { symbol: "VNE", side: "buy", quantity: 200 }, 2_000);
+  assert.equal(result.ok, true);
+  assert.ok(energy.orderPressure > 0);
+  assert.ok(machinery.orderPressure > before);
 });
 
 test("không cho bán khống hoặc mua vượt quá số vốn", () => {
