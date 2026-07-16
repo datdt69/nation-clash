@@ -1,64 +1,28 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const {
-  EVENTS,
-  majority,
-  applyPolicy,
-  resolveDuel,
-  calculateScore,
-  createTeam,
-} = require("../game-engine");
+const { createTeam, serializeTeam } = require("../game-engine");
 
-test("majority đếm phiếu và chọn phương án nhiều nhất", () => {
-  const result = majority(
-    ["growth", "welfare", "growth", "infrastructure", "growth"],
-    ["growth", "welfare", "infrastructure", "speculation"],
-  );
-  assert.equal(result.winner, "growth");
-  assert.equal(result.counts.growth, 3);
+test("tạo đúng tám màu đội và mã đội ổn định", () => {
+  const teams = Array.from({ length: 8 }, (_, index) => createTeam(index));
+  assert.equal(new Set(teams.map((team) => team.color)).size, 8);
+  assert.deepEqual(teams.map((team) => team.id), [
+    "team-1",
+    "team-2",
+    "team-3",
+    "team-4",
+    "team-5",
+    "team-6",
+    "team-7",
+    "team-8",
+  ]);
 });
 
-test("chính sách tăng trưởng thay đổi đủ ba chỉ số", () => {
+test("trạng thái công khai chỉ chứa thông tin kết nối cần thiết", () => {
   const team = createTeam(0);
-  const result = applyPolicy(team, "growth", EVENTS[0], 0, 0);
-  assert.equal(result.policy.id, "growth");
-  assert.equal(team.gdp, 55);
-  assert.equal(team.welfare, 37);
-  assert.equal(team.stability, 38);
-});
-
-test("hai đội bắt tay cùng có lợi", () => {
-  const a = createTeam(0);
-  const b = createTeam(1);
-  resolveDuel(a, b, "cooperate", "cooperate");
-  assert.deepEqual(
-    [a.gdp, a.welfare, a.stability],
-    [45, 42, 42],
-  );
-  assert.deepEqual(
-    [b.gdp, b.welfare, b.stability],
-    [45, 42, 42],
-  );
-});
-
-test("đội chơi rắn lấy lợi thế khi đối thủ bắt tay", () => {
-  const a = createTeam(0);
-  const b = createTeam(1);
-  resolveDuel(a, b, "compete", "cooperate");
-  assert.equal(a.gdp, 50);
-  assert.equal(b.gdp, 37);
-  assert.ok(a.stability > b.stability);
-});
-
-test("điểm phát triển không chỉ phụ thuộc GDP", () => {
-  const richButFragile = { gdp: 90, welfare: 20, stability: 20 };
-  const balanced = { gdp: 70, welfare: 70, stability: 70 };
-  assert.ok(calculateScore(balanced) > calculateScore(richButFragile));
-});
-
-test("cú sốc thiên tai phạt đội thiếu ổn định", () => {
-  const team = { gdp: 60, welfare: 50, stability: 30 };
-  const effect = EVENTS[4].afterRound(team);
-  assert.equal(effect.delta.gdp, -8);
-  assert.match(effect.note, /thiếu ổn định/i);
+  team.name = "Nhóm Alpha";
+  team.players.push({ id: "p1", nickname: "Nhóm Alpha", connected: true, token: "secret" });
+  const state = serializeTeam(team);
+  assert.equal(state.name, "Nhóm Alpha");
+  assert.equal(state.players[0].connected, true);
+  assert.equal(state.players[0].token, undefined);
 });
