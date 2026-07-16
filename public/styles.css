@@ -1070,7 +1070,7 @@ select:focus-visible {
   grid-template-rows: auto minmax(180px, 1fr) auto;
   overflow: hidden;
   height: 100%;
-  min-height: 540px;
+  min-height: 620px;
 }
 
 .chart-heading {
@@ -1197,6 +1197,7 @@ select:focus-visible {
   grid-template-columns: minmax(0, 1fr) minmax(240px, 0.72fr);
   gap: 9px;
   padding: 8px 14px 14px;
+  align-items: start;
 }
 
 .trade-tape,
@@ -1251,13 +1252,12 @@ select:focus-visible {
 
 .insight-card p {
   margin: 6px 0 0;
-  display: -webkit-box;
-  overflow: hidden;
+  display: block;
+  overflow: visible;
   color: #a8b5bb;
-  font-size: 0.64rem;
-  line-height: 1.42;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  font-size: 0.68rem;
+  line-height: 1.52;
+  white-space: normal;
 }
 
 .side-panel {
@@ -1986,8 +1986,8 @@ select:focus-visible {
   }
 
   .chart-panel {
-    flex: 0 0 520px;
-    grid-template-rows: auto minmax(220px, 1fr) auto;
+    flex: 0 0 660px;
+    grid-template-rows: auto minmax(300px, 1fr) auto;
   }
   .chart-heading { padding: 13px 12px 6px; }
   .market-flag { width: 38px; height: 38px; font-size: 1.25rem; }
@@ -1997,7 +1997,7 @@ select:focus-visible {
   .headline-price .price { font-size: 1.45rem; }
   .headline-price .change { justify-self: end; padding: 3px 5px; font-size: 0.61rem; }
   .chart-footer { grid-template-columns: 1fr; padding: 5px 9px 9px; }
-  .insight-card { display: none; }
+  .insight-card { display: block; }
 
   .side-panel,
   .side-panel.host-side {
@@ -2048,9 +2048,9 @@ select:focus-visible {
   .ticker-demo { padding: 10px; }
   .entry-card { padding: 22px 17px; }
   .lobby-rules span:nth-child(2) { display: none; }
-  .chart-panel { flex-basis: 372px; }
-  .chart-footer { display: none; }
-  .chart-panel { grid-template-rows: auto minmax(250px, 1fr); }
+  .chart-panel { flex-basis: 650px; }
+  .chart-footer { display: grid; }
+  .chart-panel { grid-template-rows: auto minmax(280px, 1fr) auto; }
   .portfolio-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
   .portfolio-stat { padding-inline: 5px; }
   .portfolio-stat small { font-size: 0.5rem; }
@@ -2130,7 +2130,7 @@ body {
   .event-card, .event-empty { padding-block: 8px; }
   .event-card p { font-size: 0.7rem; line-height: 1.32; }
   .market-workspace { gap: 8px; padding: 8px; }
-  .chart-panel { min-height: 520px; }
+  .chart-panel { min-height: 620px; }
   .chart-heading { padding-top: 11px; }
   .chart-footer { padding-bottom: 9px; }
   .side-panel { grid-template-rows: minmax(180px, 1fr) 360px; gap: 8px; }
@@ -2154,7 +2154,7 @@ body {
   .trading-screen { grid-template-rows: 54px 112px minmax(0, 1fr); }
   .event-label small { margin-top: 2px; }
   .event-card p { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-  .chart-panel { min-height: 470px; }
+  .chart-panel { min-height: 620px; }
   .side-panel { grid-template-rows: minmax(150px, 1fr) 330px; }
   .portfolio-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
   .portfolio-stat { padding-inline: 6px; }
