@@ -1,4 +1,4 @@
-const HAND_SIZE=5,TURN_MS=30000,REVEAL_MS=6500;
+const HAND_SIZE=8,TURN_MS=30000,REVEAL_MS=6500;
 const TARGETS=[
  {id:"growth",name:"TĂNG TRƯỞNG",icon:"↗",color:"#ffd166"},
  {id:"welfare",name:"AN SINH",icon:"♥",color:"#59e3c2"},
@@ -14,7 +14,7 @@ const CARD_TYPES={
  tax:{name:"Thuế & điều tiết",short:"THUẾ",icon:"⚖",category:"regulation",desc:"Hạn chế mất cân đối và tạo nguồn thu"},
  balance:{name:"Lợi ích hài hòa",short:"CÂN BẰNG",icon:"✦",category:"wild",desc:"Lá đặc biệt: hợp lệ với mọi mục tiêu"},
 };
-const CARD_COUNTS={private:6,state:4,fdi:6,coop:6,public:4,social:6,tax:4,balance:4};
+const CARD_COUNTS={private:11,state:8,fdi:10,coop:11,public:7,social:10,tax:7,balance:6};
 const DECK_SIZE=Object.values(CARD_COUNTS).reduce((sum,n)=>sum+n,0);
 const FINISH_BONUSES={1:25,2:18,3:12,4:7};
 const CRISES=[
@@ -46,6 +46,7 @@ function confirmFinish(game,teamId,now=Date.now()){
 }
 function play(game,teamId,cardIds,now=Date.now()){
  if(game.phase!=="turn")return{ok:false,message:"Đang công bố kết quả"};if(currentId(game)!==teamId)return{ok:false,message:"Chưa tới lượt đội bạn"};
+ if(game.pendingFinish&&unfinished(game).length===2)return{ok:false,message:"Chỉ còn 2 đội: bắt buộc tố đội vừa hết bài"};
  const e=game.economies[teamId],ids=[...new Set(cardIds||[])];if(ids.length<1||ids.length>3)return{ok:false,message:"Chọn từ 1 đến 3 lá"};const cards=ids.map(id=>e.hand.find(c=>c.id===id));if(cards.some(c=>!c))return{ok:false,message:"Bài không hợp lệ"};
  let confirmed=null;if(game.pendingFinish&&game.pendingFinish!==teamId)confirmed=confirmFinish(game,game.pendingFinish,now);
  e.hand=e.hand.filter(c=>!ids.includes(c.id));const p={id:`play-${Date.now()}-${Math.random()}`,teamId,count:cards.length,cards,targetId:game.target.id,at:now};game.pile.push(p);game.history.unshift({type:"play",teamId,count:cards.length,target:game.target.name});game.history=game.history.slice(0,16);if(!e.hand.length)game.pendingFinish=teamId;
@@ -55,10 +56,10 @@ function play(game,teamId,cardIds,now=Date.now()){
 function randomCrisis(lastId){const pool=CRISES.filter(c=>c.id!==lastId);return pool[Math.floor(Math.random()*pool.length)]||CRISES[0]}
 function challenge(game,teamId,now=Date.now()){
  if(game.phase!=="turn"||currentId(game)!==teamId)return{ok:false,message:"Chưa tới lượt tố"};const p=previousPlay(game);if(!p)return{ok:false,message:"Chưa có ai đánh bài để tố"};
- const truthful=p.cards.every(c=>c.category===game.target.id||c.category==="wild"),loserId=truthful?teamId:p.teamId,winnerId=truthful?p.teamId:teamId,loser=game.economies[loserId];let finish=null;
- if(truthful&&game.pendingFinish===p.teamId)finish=confirmFinish(game,p.teamId,now);if(!truthful){const accused=game.economies[p.teamId];accused.hand.push(...p.cards);if(game.pendingFinish===p.teamId)game.pendingFinish=null}
+ const truthful=p.cards.every(c=>c.category===game.target.id||c.category==="wild"),loserId=truthful?teamId:p.teamId,winnerId=truthful?p.teamId:teamId,loser=game.economies[loserId];let finish=null,autoFinish=null;
+ if(game.pendingFinish===p.teamId)finish=confirmFinish(game,p.teamId,now);if(finish&&unfinished(game).length===1)autoFinish=confirmFinish(game,unfinished(game)[0],now);
  const crisis=randomCrisis(loser.crises.at(-1)?.id);applyDelta(loser,crisis.delta);loser.crises.push(crisis);loser.effect={id:"crisis",name:crisis.name,desc:crisisText(crisis)};
- game.reveal={challengerId:teamId,accusedId:p.teamId,truthful,loserId,winnerId,cards:p.cards,crisis,finish,resumeTeamId:loser.place?unfinished(game)[0]:loserId,endsAt:now+REVEAL_MS};game.phase="reveal";game.history.unshift({type:"challenge",challengerId:teamId,accusedId:p.teamId,truthful,loserId});return{ok:true,truthful,loserId,finish};
+ game.reveal={challengerId:teamId,accusedId:p.teamId,truthful,loserId,winnerId,cards:p.cards,crisis,finish,autoFinish,resumeTeamId:unfinished(game).length?(loser.place?unfinished(game)[0]:loserId):null,endsAt:now+REVEAL_MS};game.phase="reveal";game.history.unshift({type:"challenge",challengerId:teamId,accusedId:p.teamId,truthful,loserId});return{ok:true,truthful,loserId,finish,autoFinish};
 }
 function nextMarket(game,now=Date.now()){
  if(!unfinished(game).length){game.phase="finished";return{finished:true}}const resume=game.reveal?.resumeTeamId;game.round++;game.pile=[];game.reveal=null;game.pendingFinish=null;game.target=TARGETS[(game.round-1)%TARGETS.length];const idx=game.seats.indexOf(resume);game.turnIndex=idx>=0&&!game.economies[resume].place?idx:nextActiveIndex(game,Math.max(0,idx));game.phase="turn";game.turnEndsAt=now+TURN_MS;return{finished:false}
@@ -70,6 +71,7 @@ function winner(game){return Object.values(game.economies).sort((a,b)=>score(b)-
 function publicState(game,viewerTeamId=null){
  const economies={};for(const [id,e] of Object.entries(game.economies))economies[id]={teamId:id,name:e.name,color:e.color,handCount:e.hand.length,stats:e.stats,crises:e.crises,place:e.place,finishBonus:e.finishBonus,effect:e.effect,score:score(e)};
  const leaderboard=Object.values(economies).sort((a,b)=>b.score-a.score||((a.place||99)-(b.place||99))).map((e,i)=>({...e,rank:i+1,qualified:i<4}));
- return{seats:game.seats,economies,round:game.round,target:game.target,turnTeamId:currentId(game),turnNumber:game.turnNumber,phase:game.phase,pile:game.pile.map(p=>({id:p.id,teamId:p.teamId,count:p.count,targetId:p.targetId})),history:game.history,reveal:game.reveal,placements:game.placements,leaderboard,finishBonuses:FINISH_BONUSES,turnEndsAt:game.turnEndsAt,deckSize:DECK_SIZE,undealtCount:game.deck.length,cardCounts:CARD_COUNTS,maxTruthful:16,hand:viewerTeamId?game.economies[viewerTeamId]?.hand||[]:null};
+ const targetCount=Object.entries(CARD_COUNTS).reduce((sum,[type,n])=>sum+(CARD_TYPES[type].category===game.target.id?n:0),0);
+ return{seats:game.seats,economies,round:game.round,target:game.target,turnTeamId:currentId(game),turnNumber:game.turnNumber,phase:game.phase,pile:game.pile.map(p=>({id:p.id,teamId:p.teamId,count:p.count,targetId:p.targetId})),history:game.history,reveal:game.reveal,placements:game.placements,leaderboard,finishBonuses:FINISH_BONUSES,turnEndsAt:game.turnEndsAt,deckSize:DECK_SIZE,undealtCount:game.deck.length,cardCounts:CARD_COUNTS,targetCount,maxTruthful:targetCount+CARD_COUNTS.balance,forcedChallenge:Boolean(game.pendingFinish&&unfinished(game).length===2),hand:viewerTeamId?game.economies[viewerTeamId]?.hand||[]:null};
 }
 module.exports={HAND_SIZE,TURN_MS,TARGETS,CARD_TYPES,CARD_COUNTS,DECK_SIZE,FINISH_BONUSES,CRISES,createGame,currentId,play,challenge,tick,winner,publicState,score,confirmFinish};
