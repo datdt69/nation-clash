@@ -11,3 +11,15 @@
 @media(max-width:1450px){.host-shell .table-stage{grid-template-columns:minmax(0,1fr) 235px}.host-shell .table-seat{width:195px}.host-shell .seat-body>b{font-size:15px}.host-shell .seat-cards strong{font-size:48px}.host-shell .host-side{padding:8px}.host-shell .rank{padding:7px}.host-shell .rank b{font-size:11px}.host-shell .rank span{font-size:10px}}
 @media(max-height:760px){.host-shell .turn-focus{height:72px}.host-shell .turn-focus b{font-size:32px}.host-shell .turn-order{height:32px}.host-shell .table-stage{height:calc(100vh - 166px)}.host-shell .table-seat{min-height:72px}.host-shell .seat-cards strong{font-size:46px}.host-shell .table-seat .avatar{flex-basis:42px;height:42px}.host-shell .target b{font-size:28px}.host-shell .pile{height:88px}.host-shell .pile span{top:94px}.host-shell .last-claim{margin-top:22px}}
 @media(max-width:900px){.host-shell .round-meta>span:nth-of-type(2){display:none}.host-shell .round-meta button[data-act="fullscreen"]{display:none}.host-shell .table-stage{grid-template-columns:1fr}.host-shell .host-side{display:none}.host-shell .table-seat{width:155px;min-height:64px}.host-shell .table-seat .avatar{flex-basis:35px;height:35px;font-size:14px}.host-shell .seat-body>b{font-size:12px}.host-shell .seat-cards strong{font-size:30px}.host-shell .seat-cards span{font-size:9px}.host-shell .seat-body>small{font-size:7px}}
+
+/* Host: keep the market phase in its own layout row so it can never cover the table. */
+.host-shell{display:grid;grid-template-rows:58px 82px 46px 38px minmax(0,1fr)}
+.host-shell .market-phase-strip{align-self:center;justify-self:center;display:flex;align-items:center;justify-content:center;gap:18px;width:min(600px,62vw);height:40px;padding:0 22px;border:2px solid var(--target);border-radius:12px;background:linear-gradient(90deg,color-mix(in srgb,var(--target) 16%,#0b0d13),#12151d 45%,color-mix(in srgb,var(--target) 16%,#0b0d13));box-shadow:0 0 20px color-mix(in srgb,var(--target) 16%,transparent);white-space:nowrap}
+.host-shell .market-phase-strip span{color:#c4cad5;font-size:15px;font-weight:800;letter-spacing:.12em}
+.host-shell .market-phase-strip span b{color:#fff;font-size:24px}
+.host-shell .market-phase-strip i{color:#747d8c;font-size:24px;font-style:normal;font-weight:900}
+.host-shell .market-phase-strip strong{color:var(--target);font-size:clamp(22px,2.1vw,34px);line-height:1;text-transform:uppercase}
+.host-shell .table-stage{height:auto;min-height:0}
+.host-shell .table-ring{min-height:0}
+@media(max-height:760px){.host-shell{grid-template-rows:58px 72px 42px 32px minmax(0,1fr)}.host-shell .market-phase-strip{height:36px}.host-shell .market-phase-strip strong{font-size:24px}.host-shell .market-phase-strip span{font-size:12px}.host-shell .market-phase-strip span b{font-size:20px}}
+@media(max-width:900px){.host-shell .market-phase-strip{width:min(520px,86vw);gap:10px;padding:0 12px}.host-shell .market-phase-strip strong{font-size:20px}.host-shell .market-phase-strip span{font-size:11px}.host-shell .market-phase-strip span b{font-size:18px}}
