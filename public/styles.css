@@ -1322,9 +1322,10 @@ select:focus-visible {
 .quotes-list {
   height: calc(100% - 45px);
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-template-rows: repeat(6, minmax(42px, 1fr));
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: repeat(12, minmax(48px, 1fr));
   overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .quote-card {
@@ -1342,8 +1343,6 @@ select:focus-visible {
   text-align: left;
   transition: background 140ms ease, border-color 140ms ease;
 }
-
-.quote-card:nth-child(odd) { border-right: 1px solid var(--line-soft); }
 
 .quote-card:last-child {
   border-bottom: 0;
@@ -2157,9 +2156,8 @@ body {
   .chart-heading { padding-top: 11px; }
   .chart-footer { padding-bottom: 9px; }
   .side-panel { grid-template-rows: minmax(0, 1fr) 350px; gap: 8px; }
-  .quotes-list { grid-template-rows: repeat(6, minmax(31px, 1fr)); }
-  .quote-card { padding-block: 4px; }
-  .quote-name small { display: none; }
+  .quotes-list { grid-template-rows: repeat(12, minmax(44px, 1fr)); }
+  .quote-card { padding-block: 5px; }
   .order-ticket { min-height: 0; padding: 9px 11px; }
   .portfolio-strip { margin-bottom: 6px; }
   .portfolio-stat { padding-block: 6px; }
@@ -2182,8 +2180,8 @@ body {
   .event-card p { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
   .chart-panel { min-height: 0; }
   .side-panel { grid-template-rows: minmax(0, 1fr) 320px; }
-  .quotes-list { grid-template-rows: repeat(6, minmax(29px, 1fr)); }
-  .quote-card { padding-block: 2px; }
+  .quotes-list { grid-template-rows: repeat(12, minmax(40px, 1fr)); }
+  .quote-card { padding-block: 3px; }
   .portfolio-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
   .portfolio-stat { padding-inline: 6px; }
   .portfolio-stat small { font-size: 0.55rem; }
