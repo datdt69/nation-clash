@@ -4,6 +4,7 @@ const { createTeam } = require("../game-engine");
 const {
   MARKET_DEFINITIONS,
   MARKET_LINKS,
+  EVENT_IMPACT_MULTIPLIER,
   STARTING_CASH,
   EVENT_INTERVAL_MS,
   createGame,
@@ -97,6 +98,15 @@ test("đúng phút thứ nhất sinh 1-3 sự kiện và giấu hệ số tác �
   assert.equal(state.activeEvents[0].affected, undefined);
   assert.equal(state.activeEvents[0].effects, undefined);
   assert.equal(state.activeEvents[0].analysis, undefined);
+});
+
+test("sự kiện lớn được khuếch đại để dẫn dắt xu hướng thị trường", () => {
+  assert.equal(EVENT_IMPACT_MULTIPLIER, 1.8);
+  const { game } = setup(1);
+  const before = game.markets.reduce((sum, market) => sum + Math.abs(market.eventMomentum), 0);
+  tick(game, 1_000 + EVENT_INTERVAL_MS, () => 0);
+  const after = game.markets.reduce((sum, market) => sum + Math.abs(market.eventMomentum), 0);
+  assert.ok(after > before);
 });
 
 test("danh mục ghi giá vốn, tiền đã mua và lãi lỗ chưa chốt", () => {
