@@ -7,7 +7,7 @@ Game bluff realtime cho lớp học, lấy cảm hứng từ Liar's Bar và minh
 - Host mở phòng trên laptop và chiếu bàn chơi lên máy chiếu.
 - Màn host có chế độ toàn màn hình; số lá còn lại được hiển thị cỡ lớn trên từng ghế để quan sát từ xa.
 - 2–8 đội tham gia bằng điện thoại; mỗi đội chỉ thấy bài riêng của mình.
-- Toàn trận dùng đúng 70 lá; đủ 8 đội thì mỗi đội nhận 8 lá và còn 6 lá không chia.
+- Toàn trận dùng đúng 64 lá; đủ 8 đội thì chia hết toàn bộ, mỗi đội nhận 8 lá.
 - Các đội có vị trí cố định quanh bàn và đánh theo chiều kim đồng hồ.
 - Mỗi vòng công bố một mục tiêu: Tăng trưởng, An sinh hoặc Điều tiết.
 - Đội đến lượt úp 1–3 lá và tự động tuyên bố tất cả thuộc mục tiêu vòng.
@@ -18,12 +18,12 @@ Game bluff realtime cho lớp học, lấy cảm hứng từ Liar's Bar và minh
 
 ## Cấu trúc bộ bài cố định
 
-- 21 lá Tăng trưởng: 11 Doanh nghiệp tư nhân + 10 FDI.
-- 21 lá An sinh: 11 Hợp tác xã + 10 An sinh xã hội.
-- 22 lá Điều tiết: 8 Doanh nghiệp nhà nước + 7 Đầu tư công + 7 Thuế.
-- 6 lá Cân bằng/Joker, hợp lệ với mọi mục tiêu.
+- 20 lá Tăng trưởng: 10 Doanh nghiệp tư nhân + 10 FDI.
+- 20 lá An sinh: 10 Hợp tác xã + 10 An sinh xã hội.
+- 20 lá Điều tiết: 7 Doanh nghiệp nhà nước + 7 Đầu tư công + 6 Thuế.
+- 4 lá Cân bằng/Joker, hợp lệ với mọi mục tiêu.
 
-Người chơi có thể dựa vào bài trên tay, 6 Joker và tổng số lá đã được tuyên bố để phát hiện bluff.
+Người chơi có thể dựa vào bài trên tay, 4 Joker và tổng số lá đã được tuyên bố để phát hiện bluff.
 
 ## Chỉ số và xếp hạng
 
