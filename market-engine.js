@@ -456,7 +456,12 @@ function applyEvent(game, event, at) {
 
 function triggerEvents(game, at, random = Math.random) {
   archiveEvents(game, at);
-  const count = 1 + Math.floor(safeRandom(random) * 3);
+  // Mở phiên bằng một tín hiệu rõ ràng; chỉ tăng mật độ tin sau khi người chơi đã có thời gian định vị xu hướng.
+  const count = game.eventRound === 0
+    ? 1
+    : game.eventRound < 3
+      ? 1 + Math.floor(safeRandom(random) * 2)
+      : 1 + Math.floor(safeRandom(random) * 3);
   const pool = [...EVENT_CATALOG];
   const selected = [];
   for (let index = 0; index < count && pool.length; index += 1) {

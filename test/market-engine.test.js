@@ -264,7 +264,7 @@ test("không cho bán khống hoặc mua vượt quá số vốn", () => {
   assert.match(tooLarge.message, /không đủ vốn/i);
 });
 
-test("đúng phút thứ nhất sinh 1-3 sự kiện và giấu hệ số tác động", () => {
+test("đợt đầu sinh một sự kiện và giấu hệ số tác động", () => {
   const { game } = setup(2);
   const result = tick(game, 1_000 + EVENT_INTERVAL_MS, () => 0);
   const state = publicState(game, "p0");
@@ -280,9 +280,21 @@ test("sự kiện đầu xuất hiện sớm để người chơi có tín hiệ
   const { game } = setup(1);
   tick(game, 1_000 + FIRST_EVENT_DELAY_MS - 1, () => 0);
   assert.equal(game.activeEvents.length, 0);
-  tick(game, 1_000 + FIRST_EVENT_DELAY_MS, () => 0);
+  tick(game, 1_000 + FIRST_EVENT_DELAY_MS, () => 0.999);
   assert.equal(game.activeEvents.length, 1);
   assert.equal(game.eventRound, 1);
+});
+
+test("mật độ tin tăng dần thay vì dội ba sự kiện ngay khi mở phiên", () => {
+  const { game } = setup(1, { durationMs: 6 * EVENT_INTERVAL_MS });
+  tick(game, 1_000 + FIRST_EVENT_DELAY_MS, () => 0.999);
+  assert.equal(game.activeEvents.length, 1);
+  tick(game, 1_000 + FIRST_EVENT_DELAY_MS + EVENT_INTERVAL_MS, () => 0.999);
+  assert.equal(game.activeEvents.length, 2);
+  tick(game, 1_000 + FIRST_EVENT_DELAY_MS + 2 * EVENT_INTERVAL_MS, () => 0.999);
+  assert.equal(game.activeEvents.length, 2);
+  tick(game, 1_000 + FIRST_EVENT_DELAY_MS + 3 * EVENT_INTERVAL_MS, () => 0.999);
+  assert.equal(game.activeEvents.length, 3);
 });
 
 test("sự kiện lớn được khuếch đại để dẫn dắt xu hướng thị trường", () => {
