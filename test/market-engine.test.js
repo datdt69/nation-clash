@@ -8,6 +8,7 @@ const {
   STARTING_CASH,
   EVENT_INTERVAL_MS,
   FIRST_EVENT_DELAY_MS,
+  TRADING_FEE_RATE,
   createGame,
   tick,
   trade,
@@ -157,6 +158,15 @@ test("bốn người all-in không thể bẻ giá vượt quá xu hướng sự
   const sellMove = (peak - market.price) / peak;
   assert.ok(sellMove > 0);
   assert.ok(sellMove < 0.035);
+});
+
+test("chặn spam hai lệnh liên tiếp trên cùng tài khoản", () => {
+  const { game } = setup(1);
+  const first = trade(game, "p0", { symbol: "VNE", side: "buy", quantity: 1 }, 2_000);
+  const spam = trade(game, "p0", { symbol: "VNE", side: "buy", quantity: 1 }, 2_100);
+  assert.equal(first.ok, true);
+  assert.equal(spam.ok, false);
+  assert.match(spam.message, /quá nhanh/i);
 });
 
 test("50 người cùng all-in chỉ tạo áp lực thanh khoản hữu hạn", () => {
@@ -319,6 +329,78 @@ test("sự kiện lớn được khuếch đại để dẫn dắt xu hướng t
   tick(game, 1_000 + EVENT_INTERVAL_MS, () => 0);
   const after = game.markets.reduce((sum, market) => sum + Math.abs(market.eventMomentum), 0);
   assert.ok(after > before);
+});
+
+test("tin tức thay đổi giá trị cơ bản nên mã đỏ không mặc định hồi về giá mở cửa", () => {
+  const { game } = setup(1);
+  const before = game.markets.reduce((sum, market) => sum + market.fundamental, 0);
+  triggerEvents(game, 2_000, () => 0);
+  const after = game.markets.reduce((sum, market) => sum + market.fundamental, 0);
+  assert.notEqual(after, before);
+});
+
+test("cú sốc thanh khoản tạo rút râu và nhịp hồi có kiểm soát", () => {
+  const { game } = setup(1, { durationMs: 2 * 60_000 });
+  game.lastTickAt = 31_000;
+  game.nextEventAt = 120_000;
+  game.markets.forEach((market) => { market.lastFlashAt = 32_000; });
+  const market = game.markets[0];
+  market.lastFlashAt = 0;
+  const sequence = [0.5, 0.5, 0.5, 0.5, 0, 0, 0.5, 0.5];
+  const before = market.price;
+  tick(game, 32_000, () => sequence.shift() ?? 0.5);
+  const shocked = market.price;
+  tick(game, 33_000, () => 0.5);
+  const recovered = market.price;
+  assert.equal(market.lastFlashAt, 32_000);
+  assert.ok(Math.abs(shocked - before) > market.openPrice * 0.01);
+  assert.ok(Math.abs(recovered - before) < Math.abs(shocked - before));
+});
+
+test("đồng hồ tâm lý phản ánh áp lực mua bán 30 giây gần nhất", () => {
+  const { game } = setup(2);
+  trade(game, "p0", { symbol: "VNE", side: "buy", quantity: 200 }, 2_000);
+  tick(game, 3_000, () => 0.5);
+  const mood = publicState(game).mood;
+  assert.equal(mood.buyVolume, 200);
+  assert.equal(mood.sellVolume, 0);
+  assert.ok(mood.score > 0);
+  assert.match(mood.label, /hưng phấn|FOMO/i);
+});
+
+test("stress 50 người mua bán hỗn hợp trong trận 15 phút vẫn giữ toàn vẹn tài khoản", () => {
+  const teams = Array.from({ length: 8 }, (_, index) => createTeam(index));
+  for (let index = 0; index < 50; index += 1) {
+    teams[index % 8].players.push({ id: `stress-${index}`, nickname: `Stress ${index}` });
+  }
+  const game = createGame(teams, { now: 1_000, durationMs: 15 * 60_000 });
+  let seed = 91;
+  const random = () => {
+    seed = (Math.imul(seed, 1_664_525) + 1_013_904_223) >>> 0;
+    return seed / 4_294_967_296;
+  };
+  for (let index = 0; index < 1_500; index += 1) {
+    const accountId = `stress-${index % 50}`;
+    const market = game.markets[Math.floor(random() * game.markets.length)];
+    const portfolio = game.portfolios[accountId];
+    const held = portfolio.holdings[market.symbol];
+    const side = held > 0 && random() < 0.46 ? "sell" : "buy";
+    const affordable = Math.floor(portfolio.cash / (market.price * (1 + TRADING_FEE_RATE)));
+    const maximum = side === "sell" ? held : affordable;
+    if (maximum > 0) trade(game, accountId, { symbol: market.symbol, side, quantity: Math.max(1, Math.floor(random() * Math.min(maximum, 120)) + 1) }, 2_000 + index * 300);
+    if (index % 10 === 0) tick(game, 2_000 + index * 300, random);
+  }
+  for (const portfolio of Object.values(game.portfolios)) {
+    assert.ok(Number.isFinite(portfolio.cash));
+    assert.ok(portfolio.cash >= 0);
+    assert.ok(Number.isFinite(portfolioValue(game, portfolio)));
+  }
+  for (const market of game.markets) {
+    assert.ok(Number.isFinite(market.price));
+    const band = market.model === "socialist" ? 0.18 : 0.25;
+    assert.ok(market.price >= market.openPrice * (1 - band) - 0.01);
+    assert.ok(market.price <= market.openPrice * (1 + band) + 0.01);
+  }
 });
 
 test("event 5 phút vẫn giữ động lượng đáng kể sau 2 phút", () => {

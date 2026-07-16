@@ -34,7 +34,7 @@ let ticketView = "order";
 let tradePending = false;
 let clockFrame = 0;
 let serverOffset = 0;
-let hostGameMinutes = 10;
+let hostGameMinutes = 15;
 let hostEventMinutes = 1.5;
 
 function brand() {
@@ -305,6 +305,16 @@ function marketVolume() {
   </div>`;
 }
 
+function hostPulse() {
+  const mood = state.game.mood || { score: 0, intensity: 0, label: "Thận trọng", buyVolume: 0, sellVolume: 0 };
+  const position = Math.max(0, Math.min(100, (Number(mood.score) + 100) / 2));
+  return `<div class="host-pulse">
+    <div class="pulse-heading"><small>Tâm lý thị trường · 30 giây</small><b>${escapeHtml(mood.label)}</b></div>
+    <div class="fear-greed-scale"><span>Sợ hãi</span><span>Hưng phấn</span><i style="left:${position}%"></i></div>
+    <div class="pulse-stats"><span><small>Áp lực bán</small><b class="down">${integerFormat.format(mood.sellVolume)} CP</b></span><span><small>Cường độ</small><b>${integerFormat.format(mood.intensity)}/100</b></span><span><small>Áp lực mua</small><b class="up">${integerFormat.format(mood.buyVolume)} CP</b></span></div>
+  </div>`;
+}
+
 function insightCard() {
   const insight = state.game.eventHistory[0];
   return `<div class="insight-card"><small>${insight ? "Phân tích sau biến động" : "Cơ chế đang được ẩn"}</small><p>${insight ? escapeHtml(insight.analysis) : "Tác động cụ thể của sự kiện không được công bố trong lúc diễn ra. Hãy quan sát đường giá để suy luận."}</p></div>`;
@@ -319,7 +329,7 @@ function chartPanel() {
       <div class="headline-price"><strong class="price">${formatPrice(market.price)}</strong><span class="change ${down ? "down" : ""}">${formatSigned(market.changePct, "%")}</span></div>
     </div>
     <div class="chart-wrap">${chartSvg(market)}</div>
-    <div class="chart-footer">${marketVolume()}${insightCard()}</div>
+    <div class="chart-footer">${view === "host" ? hostPulse() : marketVolume()}${insightCard()}</div>
   </section>`;
 }
 

@@ -282,6 +282,12 @@ function createMarket(definition, now) {
     eventVolatility: 1,
     returnMomentum: 0,
     volatilityRegime: 1,
+    hiddenRegime: "calm",
+    regimeDrift: 0,
+    regimeVolatility: 1,
+    regimeEndsAt: now + 60_000,
+    flashRebound: 0,
+    lastFlashAt: 0,
     volatility: model.volatility,
     stabilizer: model.stabilizer,
     history: seededHistory(definition, now),
@@ -301,6 +307,7 @@ function createPortfolio(team, player) {
     realizedProfit: 0,
     feesPaid: 0,
     trades: 0,
+    lastTradeAt: 0,
   };
 }
 
@@ -328,6 +335,7 @@ function createGame(teams, options = {}) {
     activeEvents: [],
     eventHistory: [],
     tradeTape: [],
+    recentFlow: [],
     rankings: [],
   };
 }
@@ -350,8 +358,37 @@ function recordPrice(market, at) {
   if (market.history.length > HISTORY_LIMIT) market.history.splice(0, market.history.length - HISTORY_LIMIT);
 }
 
+function rotateMarketRegime(market, now, random) {
+  if (now < market.regimeEndsAt) return;
+  const roll = safeRandom(random);
+  if (roll < 0.34) {
+    market.hiddenRegime = "calm";
+    market.regimeDrift = 0;
+    market.regimeVolatility = 0.82;
+  } else if (roll < 0.52) {
+    market.hiddenRegime = "risk-on";
+    market.regimeDrift = 0.000055;
+    market.regimeVolatility = 1.08;
+  } else if (roll < 0.7) {
+    market.hiddenRegime = "risk-off";
+    market.regimeDrift = -0.000055;
+    market.regimeVolatility = 1.12;
+  } else if (roll < 0.9) {
+    market.hiddenRegime = "turbulence";
+    market.regimeDrift = (safeRandom(random) - 0.5) * 0.00005;
+    market.regimeVolatility = 1.72;
+  } else {
+    const direction = safeRandom(random) < 0.5 ? -1 : 1;
+    market.hiddenRegime = direction > 0 ? "short-squeeze" : "liquidity-crunch";
+    market.regimeDrift = direction * 0.000095;
+    market.regimeVolatility = 1.48;
+  }
+  market.regimeEndsAt = now + (90 + safeRandom(random) * 150) * 1_000;
+}
+
 function updateMarketPrice(market, now, random) {
   const model = MODELS[market.model];
+  rotateMarketRegime(market, now, random);
   const gaussianNoise = safeRandom(random) + safeRandom(random) + safeRandom(random) - 1.5;
   const recent = market.history.slice(-20).map((point) => Number(point.price));
   const shortAverage = recent.slice(-5).reduce((sum, price) => sum + price, 0) / Math.max(1, Math.min(5, recent.length));
@@ -372,13 +409,27 @@ function updateMarketPrice(market, now, random) {
     1.75,
   );
   market.volatilityRegime += (targetRegime - market.volatilityRegime) * 0.16;
-  const noise = gaussianNoise * market.volatility * market.eventVolatility * market.volatilityRegime * 1.22;
+  const noise = gaussianNoise * market.volatility * market.eventVolatility * market.volatilityRegime * market.regimeVolatility * 1.22;
   const meanReversion = ((market.fundamental - market.price) / market.fundamental) * model.stabilizer;
   const demand = clamp(market.orderPressure, -1.5, 1.5) * (market.model === "socialist" ? 0.0011 : 0.00155);
   const microDrift = (safeRandom(random) - 0.5) * 0.00024;
   market.returnMomentum = clamp(market.returnMomentum * 0.32 + noise * 0.16, -0.0025, 0.0025);
+  const crowdStress = Math.abs(market.orderPressure);
+  const priceDislocation = Math.abs((market.price - market.fundamental) / market.fundamental);
+  const flashChance = 0.00012 + crowdStress * 0.0012 + Math.max(0, market.regimeVolatility - 1) * 0.00032 + Math.max(0, priceDislocation - 0.035) * 0.008;
+  let flashShock = market.flashRebound;
+  market.flashRebound = 0;
+  if (now - market.lastFlashAt > 30_000 && safeRandom(random) < flashChance) {
+    const crowdedDirection = Math.sign(market.orderPressure);
+    const direction = crowdedDirection ? -crowdedDirection : safeRandom(random) < 0.5 ? -1 : 1;
+    const modelScale = market.model === "socialist" ? 0.76 : 1;
+    flashShock += direction * (0.012 + safeRandom(random) * 0.026) * modelScale;
+    market.flashRebound = -flashShock * (0.52 + safeRandom(random) * 0.2);
+    market.lastFlashAt = now;
+    market.eventVolatility = Math.max(market.eventVolatility, 1.4);
+  }
   const percentMove = clamp(
-    noise + market.returnMomentum + technicalMomentum + breakoutMomentum + meanReversion + demand + market.eventMomentum + microDrift,
+    noise + market.returnMomentum + technicalMomentum + breakoutMomentum + meanReversion + demand + market.eventMomentum + market.regimeDrift + flashShock + microDrift,
     -0.08,
     0.08,
   );
@@ -424,6 +475,7 @@ function applyEvent(game, event, at) {
       0.0024,
     );
     market.eventVolatility += (volatility - 1) * market.sensitivity;
+    market.fundamental = boundedPrice(market, market.fundamental * (1 + clamp(momentum * 2.2, -0.022, 0.022)));
     affected.push({
       symbol: market.symbol,
       sector: market.sector,
@@ -563,6 +615,7 @@ function trade(game, accountId, order = {}, now = Date.now()) {
   if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 9_999) {
     return { ok: false, message: "Số lượng phải từ 1 đến 9.999" };
   }
+  if (Number(now) - portfolio.lastTradeAt < 250) return { ok: false, message: "Thao tác quá nhanh, hãy chờ lệnh trước được xử lý" };
 
   const executionPrice = market.price;
   const gross = roundPrice(executionPrice * quantity);
@@ -623,6 +676,7 @@ function trade(game, accountId, order = {}, now = Date.now()) {
   market.lastTradePrice = executionPrice;
   portfolio.feesPaid = roundPrice(portfolio.feesPaid + fee);
   portfolio.trades += 1;
+  portfolio.lastTradeAt = Number(now);
   recordPrice(market, Number(now));
 
   const transaction = {
@@ -642,6 +696,8 @@ function trade(game, accountId, order = {}, now = Date.now()) {
   };
   game.tradeTape.unshift(transaction);
   game.tradeTape = game.tradeTape.slice(0, 18);
+  game.recentFlow.push({ side, quantity, at: Number(now) });
+  game.recentFlow = game.recentFlow.filter((item) => Number(now) - item.at <= 30_000).slice(-500);
   return { ok: true, transaction };
 }
 
@@ -665,6 +721,22 @@ function publicMarket(market) {
   };
 }
 
+function marketMood(game) {
+  const now = game.lastTickAt;
+  const recent = game.recentFlow.filter((item) => now - item.at <= 30_000);
+  const buyVolume = recent.filter((item) => item.side === "buy").reduce((sum, item) => sum + item.quantity, 0);
+  const sellVolume = recent.filter((item) => item.side === "sell").reduce((sum, item) => sum + item.quantity, 0);
+  const total = buyVolume + sellVolume;
+  const flowBias = total ? (buyVolume - sellVolume) / total : 0;
+  const breadth = game.markets.reduce((sum, market) => sum + clamp(market.changePct / 8, -1, 1), 0) / game.markets.length;
+  const pressure = game.markets.reduce((sum, market) => sum + clamp(market.orderPressure, -1, 1), 0) / game.markets.length;
+  const score = Math.round(clamp(flowBias * 58 + breadth * 28 + pressure * 14, -100, 100));
+  const averageMove = game.markets.reduce((sum, market) => sum + Math.abs(market.changePct), 0) / game.markets.length;
+  const intensity = Math.round(clamp(Math.abs(score) + averageMove * 2.2, 0, 100));
+  const label = score <= -65 ? "Hoảng loạn" : score <= -30 ? "Sợ hãi" : score < 30 ? "Thận trọng" : score < 65 ? "Hưng phấn" : "FOMO cực độ";
+  return { score, intensity, label, buyVolume, sellVolume, windowSeconds: 30 };
+}
+
 function publicState(game, viewerAccountId = null) {
   if (!game) return null;
   const viewer = viewerAccountId ? game.portfolios[viewerAccountId] : null;
@@ -681,6 +753,7 @@ function publicState(game, viewerAccountId = null) {
     activeEvents: game.activeEvents.map(({ analysis, affected, ...event }) => event),
     eventHistory: game.eventHistory,
     tradeTape: game.tradeTape,
+    mood: marketMood(game),
     leaderboard: game.phase === "finished" && game.rankings.length ? game.rankings : leaderboard(game),
     portfolio: viewer
       ? {

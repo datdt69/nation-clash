@@ -69,7 +69,7 @@ function finish(room) {
 
 function start(room, options = {}) {
   if (room.players.size < 1) throw new Error("Cần ít nhất 1 người để mở thị trường");
-  const durationMinutes = Math.max(10, Math.min(30, Number(options.durationMinutes) || 10));
+  const durationMinutes = Math.max(10, Math.min(30, Number(options.durationMinutes) || 15));
   const eventMinutes = Math.max(1, Math.min(5, Number(options.eventMinutes) || 1.5));
   room.status = "playing";
   room.champions = null;
