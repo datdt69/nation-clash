@@ -27,6 +27,11 @@
 /* Responsive pass: laptop host and touch-first player phone. */
 button{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 
+@media(min-width:801px){
+  .lobby.player-lobby{grid-template-columns:minmax(0,960px);justify-content:center}
+  .lobby.player-lobby .lobby-main{width:100%;min-width:0}
+}
+
 @media(min-width:901px) and (max-width:1150px){
   .host-shell .table-stage{grid-template-columns:minmax(0,1fr)}
   .host-shell .host-side{display:none}
