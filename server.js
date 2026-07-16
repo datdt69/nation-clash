@@ -32,7 +32,6 @@ function state(room, host = false, viewerTeamId = null) {
   return {
     code: room.code, status: room.status, playersCount: room.players.size, maxPlayers: 8,
     teams: room.teams.map(team => serializeTeam(team, host)),
-    mode: room.mode,
     game: room.game ? publicState(room.game, viewerTeamId) : null,
     champions: room.champions,
   };
@@ -52,7 +51,7 @@ function start(room) {
   if (room.players.size < 2) throw new Error("Liar Market cần ít nhất 2 đội");
   room.status = "playing";
   room.champions = null;
-  room.game = createGame(room.teams, { mode: room.mode });
+  room.game = createGame(room.teams);
   emitState(room);
 }
 
@@ -64,7 +63,7 @@ io.on("connection", socket => {
       const host = socket.handshake.headers["x-forwarded-host"] || socket.handshake.headers.host;
       const joinUrl = `${proto}://${host}/?room=${code}`;
       const qrDataUrl = await QRCode.toDataURL(joinUrl,{margin:1,width:360});
-      const room = { code, hostToken: token(), joinUrl, qrDataUrl, players: new Map(), teams: Array.from({length:8}, (_,i) => createTeam(i)), status:"lobby", mode:"socialist", game:null, champions:null, createdAt:Date.now() };
+      const room = { code, hostToken: token(), joinUrl, qrDataUrl, players: new Map(), teams: Array.from({length:8}, (_,i) => createTeam(i)), status:"lobby", game:null, champions:null, createdAt:Date.now() };
       rooms.set(code, room);
       socket.join(`${code}:host`);
       callback({ ok:true, code, hostToken:room.hostToken, joinUrl, qrDataUrl });
@@ -80,7 +79,6 @@ io.on("connection", socket => {
     const room=rooms.get(String(code||"").toUpperCase()); if(!room||room.hostToken!==hostToken)return cb({ok:false,message:"Không có quyền"});
     try{start(room);cb({ok:true});}catch(e){cb({ok:false,message:e.message});}
   });
-  socket.on("host:mode", ({code,hostToken,mode}={},cb=()=>{}) => { const room=rooms.get(String(code||"").toUpperCase());if(!room||room.hostToken!==hostToken||room.status!=="lobby")return cb({ok:false,message:"Không thể đổi chế độ"});if(!["socialist","capitalist"].includes(mode))return cb({ok:false,message:"Chế độ không hợp lệ"});room.mode=mode;cb({ok:true});emitState(room); });
   socket.on("host:end", ({code,hostToken}={},cb=()=>{}) => { const room=rooms.get(String(code||"").toUpperCase()); if(!room||room.hostToken!==hostToken)return cb({ok:false}); finish(room);cb({ok:true}); });
   socket.on("player:join", ({code,nickname,playerToken}={},cb=()=>{}) => {
     const room=rooms.get(String(code||"").trim().toUpperCase()); const name=clean(nickname);
@@ -94,7 +92,7 @@ io.on("connection", socket => {
     socket.data.player={roomCode:room.code,playerId:player.id}; socket.join(`${room.code}:players`);
     cb({ok:true,playerToken:player.token,playerId:player.id,teamId:player.teamId}); emitState(room);
   });
-  socket.on("player:play", ({code,playerToken,cardIds}={},cb=()=>{}) => { const room=rooms.get(String(code||"").toUpperCase());const player=room&&findPlayer(room,playerToken);if(room?.status!=="playing"||!player)return cb({ok:false,message:"Trận chưa bắt đầu"});const result=play(room.game,player.teamId,cardIds);cb(result);emitState(room); });
+  socket.on("player:play", ({code,playerToken,cardIds}={},cb=()=>{}) => { const room=rooms.get(String(code||"").toUpperCase());const player=room&&findPlayer(room,playerToken);if(room?.status!=="playing"||!player)return cb({ok:false,message:"Trận chưa bắt đầu"});const result=play(room.game,player.teamId,cardIds);cb(result);if(result.ok&&room.game.phase==="finished")finish(room);else emitState(room); });
   socket.on("player:challenge", ({code,playerToken}={},cb=()=>{}) => { const room=rooms.get(String(code||"").toUpperCase());const player=room&&findPlayer(room,playerToken);if(room?.status!=="playing"||!player)return cb({ok:false,message:"Trận chưa bắt đầu"});const result=challenge(room.game,player.teamId);cb(result);emitState(room); });
   socket.on("disconnect",()=>{const id=socket.data.player;const room=id&&rooms.get(id.roomCode);const player=room?.players.get(id.playerId);if(player){player.connected=false;emitState(room);}});
 });
