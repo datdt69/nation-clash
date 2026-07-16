@@ -211,36 +211,50 @@ function chartSvg(market) {
   const right = 88;
   const top = 22;
   const bottom = 35;
-  const prices = history.map((point) => Number(point.price));
+  const candleWindowMs = 3_000;
+  const candles = [];
+  for (const point of history) {
+    const bucket = Math.floor(Number(point.at) / candleWindowMs) * candleWindowMs;
+    const price = Number(point.price);
+    const current = candles.at(-1);
+    if (!current || current.at !== bucket) candles.push({ at: bucket, open: price, high: price, low: price, close: price });
+    else {
+      current.high = Math.max(current.high, price);
+      current.low = Math.min(current.low, price);
+      current.close = price;
+    }
+  }
+  const prices = candles.flatMap((candle) => [candle.high, candle.low]);
   let minimum = Math.min(...prices);
   let maximum = Math.max(...prices);
   const padding = Math.max((maximum - minimum) * 0.18, market.price * 0.006, 0.7);
   minimum -= padding;
   maximum += padding;
   const range = maximum - minimum || 1;
-  const x = (index) => left + (index / Math.max(1, history.length - 1)) * (width - left - right);
+  const plotWidth = width - left - right;
+  const slotWidth = plotWidth / Math.max(1, candles.length);
+  const x = (index) => left + slotWidth * index + slotWidth / 2;
   const y = (price) => top + ((maximum - price) / range) * (height - top - bottom);
-  const points = history.map((point, index) => [x(index), y(point.price)]);
-  const path = points.map(([pointX, pointY], index) => `${index ? "L" : "M"}${pointX.toFixed(2)},${pointY.toFixed(2)}`).join(" ");
-  const lastPoint = points.at(-1);
-  const areaPath = `${path} L${lastPoint[0].toFixed(2)},${height - bottom} L${left},${height - bottom} Z`;
-  const rising = market.changePct >= 0;
-  const color = rising ? "#58e08f" : "#ff6b76";
-  const gradientId = `area-${market.symbol}`;
+  const candleWidth = Math.max(4, Math.min(18, slotWidth * 0.62));
+  const candleShapes = candles.map((candle, index) => {
+    const center = x(index);
+    const openY = y(candle.open);
+    const closeY = y(candle.close);
+    const rising = candle.close >= candle.open;
+    const color = rising ? "#58e08f" : "#ff6b76";
+    return `<g class="candle ${rising ? "up" : "down"}"><line class="candle-wick" x1="${center}" y1="${y(candle.high)}" x2="${center}" y2="${y(candle.low)}" stroke="${color}"></line><rect class="candle-body" x="${center - candleWidth / 2}" y="${Math.min(openY, closeY)}" width="${candleWidth}" height="${Math.max(2.5, Math.abs(closeY - openY))}" rx="1.5" fill="${rising ? "#102b1d" : color}" stroke="${color}"></rect></g>`;
+  }).join("");
   const lines = Array.from({ length: 5 }, (_, index) => {
     const ratio = index / 4;
     const lineY = top + ratio * (height - top - bottom);
     const label = maximum - ratio * range;
     return `<line class="chart-grid-line" x1="${left}" y1="${lineY}" x2="${width - right}" y2="${lineY}"></line><text class="chart-label" x="${width - right + 12}" y="${lineY + 5}">${escapeHtml(formatPrice(label))}</text>`;
   }).join("");
-  const firstTime = new Date(history[0].at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
-  const lastTime = new Date(history.at(-1).at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
-  return `<svg class="market-chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="Biểu đồ giá ngành ${escapeHtml(market.sector)} của ${escapeHtml(market.country)}">
-    <defs><linearGradient id="${gradientId}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="0.28"></stop><stop offset="100%" stop-color="${color}" stop-opacity="0"></stop></linearGradient></defs>
+  const firstTime = new Date(candles[0].at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const lastTime = new Date(candles.at(-1).at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  return `<svg class="market-chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="Biểu đồ nến giá ngành ${escapeHtml(market.sector)} của ${escapeHtml(market.country)}">
     ${lines}
-    <path d="${areaPath}" fill="url(#${gradientId})"></path>
-    <path class="chart-line" d="${path}" stroke="${color}"></path>
-    <circle class="chart-last-dot" cx="${lastPoint[0]}" cy="${lastPoint[1]}" r="5" fill="#0d1318" stroke="${color}"></circle>
+    ${candleShapes}
     <text class="chart-label" x="${left}" y="${height - 9}">${escapeHtml(firstTime)}</text>
     <text class="chart-label" x="${width - right}" y="${height - 9}" text-anchor="end">${escapeHtml(lastTime)}</text>
   </svg>`;
@@ -261,7 +275,7 @@ function chartPanel() {
   const down = market.changePct < 0;
   return `<section class="chart-panel panel">
     <div class="chart-heading">
-      <div class="market-identity"><span class="market-flag">${market.flag}</span><div class="market-name"><b>${escapeHtml(market.sector)} <span>${escapeHtml(market.country)}</span></b><small>${escapeHtml(market.symbol)} · ${escapeHtml(market.modelName)} · biểu đồ 2 phút</small></div></div>
+      <div class="market-identity"><span class="market-flag">${market.flag}</span><div class="market-name"><b>${escapeHtml(market.sector)} <span>${escapeHtml(market.country)}</span></b><small>${escapeHtml(market.symbol)} · ${escapeHtml(market.modelName)} · nến 3 giây / 2 phút</small></div></div>
       <div class="headline-price"><strong class="price">${formatPrice(market.price)}</strong><span class="change ${down ? "down" : ""}">${formatSigned(market.changePct, "%")}</span></div>
     </div>
     <div class="chart-wrap">${chartSvg(market)}</div>

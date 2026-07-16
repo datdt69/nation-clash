@@ -53,6 +53,17 @@ test("lệnh mua cập nhật tiền, cổ phiếu và đẩy giá lên", () => 
   assert.equal(game.tradeTape[0].side, "buy");
 });
 
+test("nhiều lệnh cùng chiều trong 6 giây tạo hiệu ứng đám đông mạnh dần", () => {
+  const { game } = setup(3);
+  const first = trade(game, "team-1", { symbol: "VNE", side: "buy", quantity: 50 }, 2_000);
+  const second = trade(game, "team-2", { symbol: "VNE", side: "buy", quantity: 50 }, 3_000);
+  const third = trade(game, "team-3", { symbol: "VNE", side: "buy", quantity: 50 }, 4_000);
+  assert.equal(first.ok, true);
+  assert.ok(second.transaction.impactPct > first.transaction.impactPct);
+  assert.ok(third.transaction.impactPct > second.transaction.impactPct);
+  assert.equal(third.transaction.crowdLevel, 3);
+});
+
 test("không cho bán khống hoặc mua vượt quá số vốn", () => {
   const { game } = setup(2);
   const short = trade(game, "team-1", { symbol: "UST", side: "sell", quantity: 1 });
