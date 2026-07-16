@@ -721,6 +721,32 @@ input:focus-visible {
   height: 50px;
 }
 
+.host-time-settings {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.host-time-settings label {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.host-time-settings select {
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 26px 0 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
 .player-lobby-main {
   min-height: 0;
   display: grid;
@@ -982,7 +1008,7 @@ input:focus-visible {
   min-width: 0;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(410px, 470px);
+  grid-template-columns: minmax(0, 1fr) clamp(500px, 36vw, 680px);
   gap: 10px;
   padding: 10px;
   overflow-x: hidden;
@@ -1268,14 +1294,17 @@ input:focus-visible {
 }
 
 .quote-name b {
-  font-size: 0.76rem;
+  overflow: hidden;
+  font-size: 0.84rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .quote-name small {
   margin-top: 3px;
   overflow: hidden;
   color: var(--muted);
-  font-size: 0.54rem;
+  font-size: 0.61rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1285,13 +1314,13 @@ input:focus-visible {
 }
 
 .quote-values b {
-  font-size: 0.72rem;
+  font-size: 0.8rem;
 }
 
 .quote-values small {
   margin-top: 3px;
   color: var(--green);
-  font-size: 0.59rem;
+  font-size: 0.65rem;
   font-weight: 800;
 }
 
@@ -1505,12 +1534,17 @@ input:focus-visible {
 }
 
 .order-symbol-row b {
-  font-size: 0.78rem;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.86rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .order-symbol-row small {
   color: var(--muted);
-  font-size: 0.58rem;
+  flex: 0 0 auto;
+  font-size: 0.64rem;
 }
 
 .quantity-row label {
