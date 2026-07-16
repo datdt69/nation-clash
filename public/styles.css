@@ -2009,3 +2009,46 @@ input:focus-visible {
   .order-ticket { padding-block: 9px; }
   .quick-orders { margin-block: 6px; }
 }
+
+@media (min-width: 821px) and (max-height: 900px) {
+  .trading-screen { grid-template-rows: 56px 132px minmax(0, 1fr); }
+  .trade-header .brand-copy small { display: none; }
+  .event-strip { padding-block: 8px; }
+  .event-card, .event-empty { padding-block: 8px; }
+  .event-card p { font-size: 0.7rem; line-height: 1.32; }
+  .market-workspace { gap: 8px; padding: 8px; }
+  .chart-panel { min-height: 520px; }
+  .chart-heading { padding-top: 11px; }
+  .chart-footer { padding-bottom: 9px; }
+  .side-panel { grid-template-rows: minmax(180px, 1fr) 360px; gap: 8px; }
+  .order-ticket { min-height: 0; padding: 9px 11px; }
+  .portfolio-strip { margin-bottom: 6px; }
+  .portfolio-stat { padding-block: 6px; }
+  .ticket-tabs { margin-bottom: 6px; }
+  .ticket-tabs button { height: 31px; }
+  .order-tabs { margin-bottom: 7px; }
+  .order-tab { height: 36px; }
+  .order-symbol-row { margin-bottom: 6px; }
+  .quantity-control { height: 38px; }
+  .quick-orders { margin-block: 6px; }
+  .quick-orders button { height: 29px; }
+  .order-summary { margin-block: 6px; }
+  .submit-order { height: 42px; }
+  .positions-list { height: 220px; }
+}
+
+@media (min-width: 821px) and (max-height: 750px) {
+  .trading-screen { grid-template-rows: 54px 112px minmax(0, 1fr); }
+  .event-label small { margin-top: 2px; }
+  .event-card p { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  .chart-panel { min-height: 470px; }
+  .side-panel { grid-template-rows: minmax(150px, 1fr) 330px; }
+  .portfolio-strip { grid-template-columns: 1fr 1fr; }
+  .portfolio-stat:nth-child(3) { display: none; }
+  .order-ticket { padding-block: 7px; }
+  .ticket-tabs button { height: 29px; }
+  .order-tab { height: 32px; }
+  .quantity-control { height: 34px; }
+  .quick-orders button { height: 27px; }
+  .submit-order { height: 38px; }
+}
