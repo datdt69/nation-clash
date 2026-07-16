@@ -2,7 +2,7 @@
   "name": "nation-clash",
   "version": "1.0.0",
   "private": true,
-  "description": "Realtime classroom bluff game about Vietnam's socialist-oriented market economy.",
+  "description": "Realtime classroom stock-market simulation comparing economic response models.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
