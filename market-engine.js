@@ -277,6 +277,7 @@ function createMarket(definition, now) {
     eventDecay: 0.96,
     eventVolatility: 1,
     returnMomentum: 0,
+    volatilityRegime: 1,
     volatility: model.volatility,
     stabilizer: model.stabilizer,
     history: seededHistory(definition, now),
@@ -348,12 +349,35 @@ function recordPrice(market, at) {
 function updateMarketPrice(market, now, random) {
   const model = MODELS[market.model];
   const gaussianNoise = safeRandom(random) + safeRandom(random) + safeRandom(random) - 1.5;
-  const noise = gaussianNoise * market.volatility * market.eventVolatility * 1.18;
+  const recent = market.history.slice(-20).map((point) => Number(point.price));
+  const shortAverage = recent.slice(-5).reduce((sum, price) => sum + price, 0) / Math.max(1, Math.min(5, recent.length));
+  const longAverage = recent.reduce((sum, price) => sum + price, 0) / Math.max(1, recent.length);
+  const technicalMomentum = clamp(((shortAverage - longAverage) / longAverage) * 0.045, -0.00065, 0.00065);
+  const channel = recent.slice(0, -1);
+  const channelHigh = channel.length ? Math.max(...channel) : market.price;
+  const channelLow = channel.length ? Math.min(...channel) : market.price;
+  const directionalPressure = market.eventMomentum + clamp(market.orderPressure, -1.2, 1.2) * 0.00035;
+  const breakoutMomentum = market.price >= channelHigh && directionalPressure > 0
+    ? 0.00042
+    : market.price <= channelLow && directionalPressure < 0
+      ? -0.00042
+      : 0;
+  const targetRegime = clamp(
+    0.88 + Math.abs(gaussianNoise) * 0.72 + Math.abs(market.eventMomentum) * 170,
+    0.82,
+    1.75,
+  );
+  market.volatilityRegime += (targetRegime - market.volatilityRegime) * 0.16;
+  const noise = gaussianNoise * market.volatility * market.eventVolatility * market.volatilityRegime * 1.22;
   const meanReversion = ((market.fundamental - market.price) / market.fundamental) * model.stabilizer;
   const demand = clamp(market.orderPressure, -1.5, 1.5) * (market.model === "socialist" ? 0.0011 : 0.00155);
   const microDrift = (safeRandom(random) - 0.5) * 0.00024;
   market.returnMomentum = clamp(market.returnMomentum * 0.32 + noise * 0.16, -0.0025, 0.0025);
-  const percentMove = clamp(noise + market.returnMomentum + meanReversion + demand + market.eventMomentum + microDrift, -0.08, 0.08);
+  const percentMove = clamp(
+    noise + market.returnMomentum + technicalMomentum + breakoutMomentum + meanReversion + demand + market.eventMomentum + microDrift,
+    -0.08,
+    0.08,
+  );
 
   market.price = boundedPrice(market, market.price * (1 + percentMove));
   market.changePct = roundPrice(((market.price - market.openPrice) / market.openPrice) * 100);

@@ -291,8 +291,11 @@ function chartSvg(market) {
 }
 
 function tradeTape() {
-  const transaction = state.game.tradeTape[0];
-  return `<div class="trade-tape"><div class="trade-tape-header">Lệnh gần nhất trên toàn sàn</div>${transaction ? `<div class="tape-row"><span class="tape-side ${transaction.side === "sell" ? "sell" : ""}">${transaction.side === "buy" ? "MUA" : "BÁN"}</span><b>${escapeHtml(transaction.symbol)}</b><span>${escapeHtml(transaction.playerName || transaction.teamName)} · ${escapeHtml(transaction.teamName)} · ${integerFormat.format(transaction.quantity)} cổ phiếu</span><strong>${formatPrice(transaction.price)}</strong></div>` : `<div class="tape-row"><span class="muted">Chưa có giao dịch nào được khớp.</span></div>`}</div>`;
+  const transactions = state.game.tradeTape.slice(0, 5);
+  const buyVolume = transactions.filter((item) => item.side === "buy").reduce((sum, item) => sum + item.quantity, 0);
+  const sellVolume = transactions.filter((item) => item.side === "sell").reduce((sum, item) => sum + item.quantity, 0);
+  const rows = transactions.map((transaction) => `<div class="tape-row"><span class="tape-side ${transaction.side === "sell" ? "sell" : ""}">${transaction.side === "buy" ? "MUA" : "BÁN"}</span><b>${escapeHtml(transaction.symbol)}</b><span>${escapeHtml(transaction.playerName || transaction.teamName)} · ${escapeHtml(transaction.teamName)} · ${integerFormat.format(transaction.quantity)} CP</span><strong>${formatPrice(transaction.price)}</strong></div>`).join("");
+  return `<div class="trade-tape"><div class="trade-tape-heading"><div class="trade-tape-header">Giao dịch gần nhất</div><div class="volume-summary"><span>Mua <b>${integerFormat.format(buyVolume)}</b></span><span class="sell">Bán <b>${integerFormat.format(sellVolume)}</b></span></div></div>${transactions.length ? `<div class="trade-tape-list">${rows}</div>` : `<div class="tape-empty muted">Chưa có giao dịch nào được khớp.</div>`}</div>`;
 }
 
 function insightCard() {

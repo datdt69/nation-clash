@@ -1218,13 +1218,28 @@ select:focus-visible {
   text-transform: uppercase;
 }
 
+.trade-tape-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.volume-summary { display: flex; gap: 5px; font-size: 0.54rem; font-weight: 800; }
+.volume-summary span { border-radius: 5px; padding: 3px 5px; background: var(--green-soft); color: var(--green); }
+.volume-summary span.sell { background: var(--red-soft); color: var(--red); }
+.trade-tape-list { max-height: 142px; margin-top: 5px; overflow-y: auto; scrollbar-width: thin; }
+.tape-empty { margin-top: 9px; font-size: 0.65rem; }
+
 .tape-row {
   min-width: 0;
   display: grid;
   grid-template-columns: auto auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
-  margin-top: 7px;
+  margin-top: 0;
+  border-top: 1px solid var(--line-soft);
+  padding: 5px 0;
   font-size: 0.66rem;
 }
 

@@ -77,6 +77,36 @@ test("xếp hạng công bằng khi các đội có số thành viên khác nhau
   assert.equal(solo.netWorth, pair.netWorth);
 });
 
+test("ENDING tính cùng một phần trăm cho đội 1, 3 và 7 người dù tổng vốn khác nhau", () => {
+  const teams = Array.from({ length: 8 }, (_, index) => createTeam(index));
+  const sizes = [1, 3, 7];
+  sizes.forEach((size, teamIndex) => {
+    for (let member = 0; member < size; member += 1) {
+      teams[teamIndex].players.push({ id: `fair-${teamIndex}-${member}`, nickname: `T${teamIndex}-${member}` });
+    }
+  });
+  const game = createGame(teams, { now: 1_000 });
+  const gains = [
+    [8_500],
+    [20_000, 5_500, 0],
+    [30_000, 20_000, 10_000, 5_000, 0, -2_500, -3_000],
+  ];
+  gains.forEach((teamGains, teamIndex) => {
+    teamGains.forEach((gain, member) => {
+      game.portfolios[`fair-${teamIndex}-${member}`].cash += gain;
+    });
+  });
+  finishGame(game, 5_000);
+  const board = leaderboard(game);
+  for (const [index, size] of sizes.entries()) {
+    const entry = board.find((item) => item.teamId === teams[index].id);
+    assert.equal(entry.members, size);
+    assert.equal(entry.netWorth, 108_500);
+    assert.equal(entry.profitPct, 8.5);
+  }
+  assert.equal(new Set(board.map((entry) => entry.profitPct)).size, 1);
+});
+
 test("lệnh mua cập nhật tiền, cổ phiếu và đẩy giá lên", () => {
   const { game } = setup(2);
   const market = game.markets.find((entry) => entry.symbol === "VNE");
@@ -154,6 +184,28 @@ test("giá luôn nằm trong biên dao động của phiên dù news kéo dài",
     assert.ok(market.price >= market.openPrice * (1 - band) - 0.01);
     assert.ok(market.price <= market.openPrice * (1 + band) + 0.01);
   }
+});
+
+test("phiên 10 phút có breakout kỹ thuật vượt 5% nhưng không mất kiểm soát", () => {
+  let beyondFive = 0;
+  let total = 0;
+  let sessionPeak = 0;
+  for (let run = 1; run <= 10; run += 1) {
+    const { game } = setup(1, { durationMs: 10 * 60_000, eventIntervalMs: 60_000 });
+    let seed = (run * 987_654_321) >>> 0;
+    const random = () => {
+      seed = (Math.imul(seed, 1_664_525) + 1_013_904_223) >>> 0;
+      return seed / 4_294_967_296;
+    };
+    tick(game, game.endsAt, random);
+    const moves = game.markets.map((market) => Math.abs(market.changePct));
+    beyondFive += moves.filter((move) => move > 5).length;
+    total += moves.length;
+    sessionPeak = Math.max(sessionPeak, ...moves);
+  }
+  assert.ok(beyondFive / total >= 0.2);
+  assert.ok(sessionPeak >= 7);
+  assert.ok(sessionPeak <= 25);
 });
 
 test("lịch sử OHLC lưu high-low để nến có râu từ biến động nội kỳ", () => {
