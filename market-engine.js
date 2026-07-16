@@ -21,7 +21,7 @@ const MODELS = {
   socialist: {
     id: "socialist",
     name: "Thị trường định hướng xã hội chủ nghĩa",
-    short: "Định hướng XHCN",
+    short: "Định hướng xã hội chủ nghĩa",
     volatility: 0.0019,
     stabilizer: 0.012,
   },

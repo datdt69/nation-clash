@@ -320,7 +320,7 @@ function quoteCard(market) {
   const down = market.changePct < 0;
   return `<button class="quote-card ${market.symbol === selectedSymbol ? "selected" : ""}" data-symbol="${escapeHtml(market.symbol)}">
     <span class="quote-flag">${market.flag}</span>
-    <span class="quote-name"><b>${escapeHtml(market.sector)} · ${escapeHtml(market.country)}</b><small>${escapeHtml(market.symbol)} · ${market.model === "capitalist" ? "Tư bản chủ nghĩa" : "Định hướng XHCN"}</small></span>
+    <span class="quote-name"><b>${escapeHtml(market.sector)} · ${escapeHtml(market.country)}</b><small>${escapeHtml(market.symbol)} · ${market.model === "capitalist" ? "Tư bản chủ nghĩa" : "Định hướng xã hội chủ nghĩa"}</small></span>
     <span class="quote-values"><b class="quote-price">${formatPrice(market.price)}</b><small class="${down ? "down" : ""}">${formatSigned(market.changePct, "%")}</small></span>
   </button>`;
 }
