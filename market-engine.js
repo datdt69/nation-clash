@@ -1,6 +1,7 @@
 const STARTING_CASH = 100_000;
 const GAME_DURATION_MS = 10 * 60_000;
-const EVENT_INTERVAL_MS = 2 * 60_000;
+const EVENT_INTERVAL_MS = 60_000;
+const FIRST_EVENT_DELAY_MS = 15_000;
 const PRICE_TICK_MS = 1_000;
 const HISTORY_LIMIT = 120;
 const TRADING_FEE_RATE = 0.0015;
@@ -273,7 +274,7 @@ function createGame(teams, options = {}) {
     endsAt: now + durationMs,
     durationMs,
     eventIntervalMs,
-    nextEventAt: now + eventIntervalMs,
+    nextEventAt: now + Math.min(FIRST_EVENT_DELAY_MS, eventIntervalMs),
     lastTickAt: now,
     eventRound: 0,
     tradeSequence: 0,
@@ -631,6 +632,7 @@ module.exports = {
   STARTING_CASH,
   GAME_DURATION_MS,
   EVENT_INTERVAL_MS,
+  FIRST_EVENT_DELAY_MS,
   TRADING_FEE_RATE,
   EVENT_IMPACT_MULTIPLIER,
   createGame,

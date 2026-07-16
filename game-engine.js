@@ -1,12 +1,12 @@
 const TEAM_PRESETS = [
-  { color: "#66e3ff", accent: "#b8f3ff" },
-  { color: "#ffd166", accent: "#ffe9a8" },
-  { color: "#8ce99a", accent: "#c8f7d0" },
-  { color: "#ff7b8a", accent: "#ffc0c7" },
-  { color: "#b197fc", accent: "#ddd2ff" },
-  { color: "#63e6be", accent: "#b8f5e2" },
-  { color: "#ffa94d", accent: "#ffd4a8" },
-  { color: "#f783d1", accent: "#fac0e8" },
+  { color: "#06728d", accent: "#d8f2f8" },
+  { color: "#9a6500", accent: "#fff0c7" },
+  { color: "#2b7a3d", accent: "#ddf4e1" },
+  { color: "#b52f43", accent: "#f9dce1" },
+  { color: "#6545b8", accent: "#e9e1fa" },
+  { color: "#087d64", accent: "#d7f3eb" },
+  { color: "#a84f00", accent: "#fae4cf" },
+  { color: "#a73283", accent: "#f7dced" },
 ];
 
 function createTeam(index) {

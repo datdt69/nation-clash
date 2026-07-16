@@ -17,7 +17,7 @@ const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (character
   "'": "&#39;",
   '"': "&quot;",
 })[character]);
-const safeColor = (value) => (/^#[0-9a-f]{6}$/i.test(String(value || "")) ? value : "#58e08f");
+const safeColor = (value) => (/^#[0-9a-f]{6}$/i.test(String(value || "")) ? value : "#087a45");
 const numberFormat = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 });
 const integerFormat = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 });
 
@@ -34,7 +34,7 @@ let tradePending = false;
 let clockFrame = 0;
 let serverOffset = 0;
 let hostGameMinutes = 10;
-let hostEventMinutes = 2;
+let hostEventMinutes = 1;
 
 function brand() {
   return `<div class="brand">
@@ -87,7 +87,7 @@ function landing() {
       <div class="landing-copy">
         <p class="eyebrow">8 đội · tối đa 56 người · 12 ngành</p>
         <h1>Đọc biến động.<br><span>Chốt quyết định.</span></h1>
-        <p>Giao dịch tám ngành nghề của tám quốc gia, phản ứng với các cú sốc kinh tế và khám phá cách hai mô hình thị trường xử lý cùng một vấn đề.</p>
+        <p>Giao dịch mười hai ngành nghề của mười hai quốc gia, phản ứng với các cú sốc kinh tế và khám phá cách hai mô hình thị trường xử lý cùng một vấn đề.</p>
       </div>
       <div class="ticker-cloud" aria-hidden="true">
         ${demos.map(([flag, symbol, price, change]) => `<article class="ticker-demo"><span>${flag}</span><b>${symbol}</b><small><span>${price}</span><em>${change}</em></small></article>`).join("")}
@@ -247,7 +247,7 @@ function chartSvg(market) {
     const openY = y(candle.open);
     const closeY = y(candle.close);
     const rising = candle.close >= candle.open;
-    const color = rising ? "#58e08f" : "#ff6b76";
+    const color = rising ? "#087a45" : "#c73747";
     return `<g class="candle ${rising ? "up" : "down"}"><line class="candle-wick" x1="${center}" y1="${y(candle.high)}" x2="${center}" y2="${y(candle.low)}" stroke="${color}"></line><rect class="candle-body" x="${center - candleWidth / 2}" y="${Math.min(openY, closeY)}" width="${candleWidth}" height="${Math.max(2.5, Math.abs(closeY - openY))}" rx="1.5" fill="${color}" stroke="${color}"></rect></g>`;
   }).join("");
   const lines = Array.from({ length: 5 }, (_, index) => {

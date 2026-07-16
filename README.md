@@ -9,9 +9,9 @@ Trò chơi giao dịch cổ phiếu mô phỏng theo thời gian thực dành ch
 - Người điều khiển tạo phòng, chiếu mã QR và mã phòng lên màn hình lớn.
 - Host có thể mở thị trường ngay từ 1 người để kiểm thử.
 - Tối đa 56 người tham gia bằng điện thoại, chọn một trong 8 đội; mỗi đội nhận `100.000` vốn mô phỏng.
-- Tám mã là tám ngành gắn với quốc gia: công nghệ Hoa Kỳ, ô tô Nhật Bản, chế tạo máy Đức, tài chính Anh, năng lượng Việt Nam, thương mại điện tử Trung Quốc, nông nghiệp Lào và y tế–dược phẩm Cuba.
+- Mười hai mã đại diện cho mười hai ngành/quốc gia và liên kết với nhau theo chuỗi cung ứng, từ công nghệ, bán dẫn, dầu mỏ và logistics đến năng lượng, nông nghiệp, thực phẩm và y tế.
 - Giá thay đổi mỗi giây theo nhiễu thị trường, cung–cầu, thanh khoản, giao dịch của người chơi và sự kiện kinh tế.
-- Đúng mỗi 60 giây, máy chủ chọn ngẫu nhiên 1–3 sự kiện.
+- Sự kiện đầu xuất hiện sau 15 giây; sau đó máy chủ chọn ngẫu nhiên 1–3 sự kiện theo chu kỳ host cấu hình (mặc định 60 giây).
 - Trong lúc sự kiện diễn ra, người chơi chỉ thấy nội dung tình huống để tự suy luận ngành nào tăng hoặc giảm; mapping tác động và hệ số số học được giữ kín ở máy chủ.
 - Sau khi sự kiện kết thúc, game công bố một phân tích ngắn về cách hai mô hình phản ứng.
 - Không cho phép bán khống. Mỗi giao dịch chịu phí mô phỏng `0,15%`.

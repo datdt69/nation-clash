@@ -7,6 +7,7 @@ const {
   EVENT_IMPACT_MULTIPLIER,
   STARTING_CASH,
   EVENT_INTERVAL_MS,
+  FIRST_EVENT_DELAY_MS,
   createGame,
   tick,
   trade,
@@ -137,6 +138,15 @@ test("đúng phút thứ nhất sinh 1-3 sự kiện và giấu hệ số tác �
   assert.equal(state.activeEvents[0].affected, undefined);
   assert.equal(state.activeEvents[0].effects, undefined);
   assert.equal(state.activeEvents[0].analysis, undefined);
+});
+
+test("sự kiện đầu xuất hiện sớm để người chơi có tín hiệu giao dịch", () => {
+  const { game } = setup(1);
+  tick(game, 1_000 + FIRST_EVENT_DELAY_MS - 1, () => 0);
+  assert.equal(game.activeEvents.length, 0);
+  tick(game, 1_000 + FIRST_EVENT_DELAY_MS, () => 0);
+  assert.equal(game.activeEvents.length, 1);
+  assert.equal(game.eventRound, 1);
 });
 
 test("sự kiện lớn được khuếch đại để dẫn dắt xu hướng thị trường", () => {

@@ -1,22 +1,22 @@
 :root {
-  color-scheme: dark;
-  --bg: #070b0f;
-  --surface: #0d1318;
-  --surface-2: #111a20;
-  --surface-3: #162128;
-  --line: #26333b;
-  --line-soft: rgba(140, 164, 176, 0.16);
-  --text: #f3f7f4;
-  --muted: #8c9ca5;
-  --green: #58e08f;
-  --green-soft: rgba(88, 224, 143, 0.13);
-  --red: #ff6b76;
-  --red-soft: rgba(255, 107, 118, 0.13);
-  --yellow: #ffd166;
-  --cyan: #66e3ff;
+  color-scheme: light;
+  --bg: #f4f7f6;
+  --surface: #ffffff;
+  --surface-2: #f0f5f2;
+  --surface-3: #e5eee9;
+  --line: #c8d5ce;
+  --line-soft: rgba(45, 78, 61, 0.14);
+  --text: #15231c;
+  --muted: #5f7268;
+  --green: #087a45;
+  --green-soft: rgba(8, 122, 69, 0.1);
+  --red: #c73747;
+  --red-soft: rgba(199, 55, 71, 0.1);
+  --yellow: #946200;
+  --cyan: #006b86;
   --radius: 18px;
   --radius-sm: 11px;
-  --shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
+  --shadow: 0 18px 45px rgba(31, 57, 43, 0.12);
   font-synthesis: none;
 }
 
@@ -1148,7 +1148,7 @@ input:focus-visible {
   border: 1px solid var(--line-soft);
   border-radius: 11px;
   padding: 9px 11px;
-  background: #0a1014;
+  background: var(--surface-2);
 }
 
 .trade-tape-header,
@@ -2009,6 +2009,60 @@ input:focus-visible {
   .order-ticket { padding-block: 9px; }
   .quick-orders { margin-block: 6px; }
 }
+
+/* Light presentation theme: high contrast on projectors and classroom displays. */
+body {
+  background:
+    radial-gradient(circle at 12% 8%, rgba(8, 122, 69, 0.08), transparent 28%),
+    radial-gradient(circle at 90% 92%, rgba(0, 107, 134, 0.06), transparent 30%),
+    var(--bg);
+}
+
+.panel { background: rgba(255, 255, 255, 0.96); }
+.field label { color: #42594d; }
+.field input,
+.field select,
+.team-slot,
+.position-card,
+.portfolio-stat,
+.quick-orders button { background-color: #ffffff; }
+.field input::placeholder { color: #84978d; }
+.live-chip,
+.status-chip { background: rgba(255, 255, 255, 0.82); color: #42594d; }
+.landing-copy > p:last-child,
+.event-card p { color: #53685d; }
+.ticker-demo { background: rgba(255, 255, 255, 0.78); }
+.entry-divider { color: #6b7d73; }
+.simulation-note,
+.winner-note { color: #63786c; }
+.qr-shell { box-shadow: 0 18px 42px rgba(31, 57, 43, 0.16); }
+.join-link code { color: #53685d; }
+.team-slot { border-color: #b9c9c0; }
+.team-slot.joined { background: color-mix(in srgb, var(--team-color) 7%, #ffffff); }
+.team-online { background: #a9b8b0; }
+.trade-header { background: rgba(255, 255, 255, 0.97); }
+.event-strip { background: #edf3f0; }
+.event-card,
+.event-empty { background: #fff9e8; }
+.event-empty { background: #ffffff; }
+.market-name b span { font-weight: 800; }
+.chart-grid-line { stroke: #d3dfd8; }
+.chart-label { fill: #5f7268; }
+.trade-tape,
+.insight-card { background: #f7faf8; }
+.tape-row span:nth-child(3),
+.insight-card p { color: #53685d; }
+.ticket-tabs,
+.quantity-control input { background: #e9f0ec; }
+.position-actions button { color: #42594d; }
+.quick-orders button { color: #53685d; }
+.quick-orders button:hover { border-color: #879c91; }
+.toast { background: #ffffff; box-shadow: 0 14px 36px rgba(31, 57, 43, 0.2); }
+.primary-button,
+.submit-order { color: #ffffff; }
+.primary-button:hover:not(:disabled) { background: #096b3f; }
+.danger-button { color: #a82938; }
+.submit-order.sell { color: #ffffff; }
 
 @media (min-width: 821px) and (max-height: 900px) {
   .trading-screen { grid-template-rows: 56px 132px minmax(0, 1fr); }
