@@ -1,41 +1,37 @@
-# Economic Shieldwall
+# Liar Market Bar
 
-Game web realtime lấy cảm hứng từ vòng lặp **chỉ huy đội quân – chiếm cứ điểm – giữ cân bằng** của Shieldwall, được thiết kế cho bài thuyết trình **Kinh tế thị trường định hướng XHCN ở Việt Nam**.
+Game bluff realtime cho lớp học, lấy cảm hứng từ Liar's Bar và minh họa sự khác nhau giữa kinh tế thị trường tư bản chủ nghĩa với kinh tế thị trường định hướng XHCN.
 
-## Gameplay
+## Cách tổ chức
 
-- Tối đa 8 người, tự chia xen kẽ thành hai phe.
-- Mỗi người điều khiển một chỉ huy và 5 NPC.
-- Di chuyển bằng WASD/D-pad.
-- Ba lệnh: **Theo tôi**, **Phòng thủ**, **Tấn công**.
-- NPC tự giữ đội hình, tìm mục tiêu và giao tranh.
-- Chỉ huy và NPC chết sẽ tái tập hợp tại căn cứ, không bị loại khỏi trận.
+- Host mở phòng trên laptop và chiếu bàn chơi lên máy chiếu.
+- 2–8 đội tham gia bằng điện thoại; mỗi đội chỉ thấy bài riêng của mình.
+- Các đội có vị trí cố định quanh bàn và đánh theo chiều kim đồng hồ.
+- Mỗi vòng công bố một mục tiêu: Tăng trưởng, An sinh hoặc Điều tiết.
+- Đội đến lượt úp 1–3 lá và tự động tuyên bố tất cả thuộc mục tiêu vòng.
+- Đội kế tiếp tố “Nói dối” hoặc chọn bài để đánh tiếp.
+- Sau 8 vòng, hệ thống tính điểm theo chế độ host đã chọn.
 
-Ba cứ điểm:
+## Hai chế độ
 
-- Khu sản xuất → GDP.
-- Khu phúc lợi → an sinh.
-- Khu điều tiết → ổn định.
-
-Phe giữ cân bằng `GDP ≥ 40`, `An sinh ≥ 32`, `Ổn định ≥ 32` nhận điểm chiến thắng nhanh hơn. Khủng hoảng định kỳ phạt phe thiếu ổn định. Trận mặc định kéo dài 6 phút.
-
-## UX
-
-- Tutorial trực quan ba bước trước trận.
-- Mobile có D-pad lớn và ba nút lệnh cố định.
-- Màn hình player dùng camera bám chỉ huy.
-- Màn hình host hiển thị toàn chiến trường, tiến độ chiếm điểm và ba chỉ số của hai phe.
+- **Thị trường TBCN:** GDP và ngân sách có trọng số quyết định.
+- **Định hướng XHCN:** GDP, ngân sách, an sinh và ổn định cùng được tính; chênh lệch lớn bị trừ điểm.
 
 ## Chạy local
 
 ```bash
-npm ci
-npm test
+npm install
 npm start
 ```
 
-Mở `http://localhost:3000`. Có thể đổi thời lượng bằng `MATCH_SECONDS`.
+Mở `http://localhost:3000`.
+
+## Kiểm thử
+
+```bash
+npm test
+```
 
 ## Deploy Render
 
-Repo có `render.yaml`: build `npm ci`, start `npm start`, health check `/health`.
+Repo có sẵn `render.yaml` và `Dockerfile`. Kết nối repo với Render, chọn Blueprint hoặc Web Service và bật Auto Deploy.
