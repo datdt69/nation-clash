@@ -8,6 +8,9 @@ const { createTeam, serializeTeam } = require("./game-engine");
 const { createGame, tick, trade, finishGame, winner, publicState } = require("./market-engine");
 
 const PORT = Number(process.env.PORT || 3000);
+const TEAM_COUNT = 8;
+const MAX_PLAYERS_PER_TEAM = 7;
+const MAX_PLAYERS = TEAM_COUNT * MAX_PLAYERS_PER_TEAM;
 const app = express();
 app.set("trust proxy", true);
 app.use(express.static(path.join(__dirname, "public")));
@@ -40,7 +43,8 @@ function roomState(room, viewerTeamId = null) {
     code: room.code,
     status: room.status,
     playersCount: room.players.size,
-    maxPlayers: 8,
+    maxPlayers: MAX_PLAYERS,
+    maxPlayersPerTeam: MAX_PLAYERS_PER_TEAM,
     serverNow: Date.now(),
     teams: room.teams.map(serializeTeam),
     game: room.game ? publicState(room.game, viewerTeamId) : null,
@@ -50,8 +54,10 @@ function roomState(room, viewerTeamId = null) {
 
 function emitState(room) {
   io.to(`${room.code}:host`).emit("state", roomState(room));
-  for (const player of room.players.values()) {
-    if (player.connected) io.to(player.socketId).emit("state", roomState(room, player.teamId));
+  for (const team of room.teams) {
+    if (team.players.some((player) => player.connected)) {
+      io.to(`${room.code}:team:${team.id}`).emit("state", roomState(room, team.id));
+    }
   }
 }
 
@@ -64,7 +70,7 @@ function finish(room) {
 }
 
 function start(room) {
-  if (room.players.size < 2) throw new Error("Cần ít nhất 2 đội để mở thị trường");
+  if (room.players.size < 1) throw new Error("Cần ít nhất 1 người để mở thị trường");
   room.status = "playing";
   room.champions = null;
   room.game = createGame(room.teams);
@@ -89,7 +95,7 @@ io.on("connection", (socket) => {
         joinUrl,
         qrDataUrl,
         players: new Map(),
-        teams: Array.from({ length: 8 }, (_, index) => createTeam(index)),
+        teams: Array.from({ length: TEAM_COUNT }, (_, index) => createTeam(index)),
         status: "lobby",
         game: null,
         champions: null,
@@ -132,7 +138,7 @@ io.on("connection", (socket) => {
     callback({ ok: true });
   });
 
-  socket.on("player:join", ({ code, nickname, playerToken } = {}, callback = () => {}) => {
+  socket.on("player:join", ({ code, nickname, teamId, playerToken } = {}, callback = () => {}) => {
     const room = rooms.get(String(code || "").trim().toUpperCase());
     const name = clean(nickname);
     if (!room) return callback({ ok: false, message: "Không tìm thấy phòng" });
@@ -143,11 +149,13 @@ io.on("connection", (socket) => {
       player.connected = true;
       player.socketId = socket.id;
       player.nickname = name;
-      room.teams.find((team) => team.id === player.teamId).name = name;
     } else {
       if (room.status !== "lobby") return callback({ ok: false, message: "Thị trường đã mở, không thể thêm đội mới" });
-      if (room.players.size >= 8) return callback({ ok: false, message: "Phòng đã đủ 8 đội" });
-      const team = room.teams.find((candidate) => !candidate.players.length);
+      if (room.players.size >= MAX_PLAYERS) return callback({ ok: false, message: "Phòng đã đủ 56 người" });
+      const requestedTeam = room.teams.find((candidate) => candidate.id === teamId);
+      const team = requestedTeam || room.teams.find((candidate) => candidate.players.length < MAX_PLAYERS_PER_TEAM);
+      if (!team) return callback({ ok: false, message: "Không tìm thấy đội phù hợp" });
+      if (team.players.length >= MAX_PLAYERS_PER_TEAM) return callback({ ok: false, message: `${team.name} đã đủ 7 người` });
       player = {
         id: token(8),
         token: token(),
@@ -156,13 +164,13 @@ io.on("connection", (socket) => {
         connected: true,
         socketId: socket.id,
       };
-      team.name = name;
       team.players.push(player);
       room.players.set(player.id, player);
     }
 
     socket.data.player = { roomCode: room.code, playerId: player.id };
     socket.join(`${room.code}:players`);
+    socket.join(`${room.code}:team:${player.teamId}`);
     callback({ ok: true, playerToken: player.token, playerId: player.id, teamId: player.teamId });
     emitState(room);
   });
@@ -180,7 +188,7 @@ io.on("connection", (socket) => {
     const identity = socket.data.player;
     const room = identity && rooms.get(identity.roomCode);
     const player = room?.players.get(identity.playerId);
-    if (player) {
+    if (player?.socketId === socket.id) {
       player.connected = false;
       emitState(room);
     }
@@ -207,4 +215,4 @@ if (require.main === module) {
   server.listen(PORT, "0.0.0.0", () => console.log(`Sàn Kinh Tế đang chạy tại http://localhost:${PORT}`));
 }
 
-module.exports = { app, server, rooms };
+module.exports = { app, server, rooms, TEAM_COUNT, MAX_PLAYERS_PER_TEAM, MAX_PLAYERS };

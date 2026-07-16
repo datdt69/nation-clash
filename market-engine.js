@@ -23,14 +23,14 @@ const MODELS = {
 };
 
 const MARKET_DEFINITIONS = [
-  { symbol: "USX", country: "Hoa Kỳ", flag: "🇺🇸", model: "capitalist", openPrice: 182.4, liquidity: 5_800, sensitivity: 1.12 },
-  { symbol: "JPX", country: "Nhật Bản", flag: "🇯🇵", model: "capitalist", openPrice: 146.8, liquidity: 5_200, sensitivity: 0.91 },
-  { symbol: "DEX", country: "Đức", flag: "🇩🇪", model: "capitalist", openPrice: 158.6, liquidity: 5_400, sensitivity: 0.96 },
-  { symbol: "UKX", country: "Anh", flag: "🇬🇧", model: "capitalist", openPrice: 131.2, liquidity: 4_900, sensitivity: 1.03 },
-  { symbol: "VNX", country: "Việt Nam", flag: "🇻🇳", model: "socialist", openPrice: 96.8, liquidity: 4_100, sensitivity: 1.08 },
-  { symbol: "CNX", country: "Trung Quốc", flag: "🇨🇳", model: "socialist", openPrice: 124.5, liquidity: 5_700, sensitivity: 1.02 },
-  { symbol: "LAX", country: "Lào", flag: "🇱🇦", model: "socialist", openPrice: 72.6, liquidity: 3_400, sensitivity: 0.88 },
-  { symbol: "CBX", country: "Cuba", flag: "🇨🇺", model: "socialist", openPrice: 68.4, liquidity: 3_100, sensitivity: 0.84 },
+  { symbol: "UST", sector: "Công nghệ", country: "Hoa Kỳ", flag: "🇺🇸", model: "capitalist", openPrice: 182.4, liquidity: 5_800, sensitivity: 1.12 },
+  { symbol: "JPA", sector: "Ô tô", country: "Nhật Bản", flag: "🇯🇵", model: "capitalist", openPrice: 146.8, liquidity: 5_200, sensitivity: 0.91 },
+  { symbol: "DEM", sector: "Chế tạo máy", country: "Đức", flag: "🇩🇪", model: "capitalist", openPrice: 158.6, liquidity: 5_400, sensitivity: 0.96 },
+  { symbol: "UKF", sector: "Tài chính", country: "Anh", flag: "🇬🇧", model: "capitalist", openPrice: 131.2, liquidity: 4_900, sensitivity: 1.03 },
+  { symbol: "VNE", sector: "Năng lượng", country: "Việt Nam", flag: "🇻🇳", model: "socialist", openPrice: 96.8, liquidity: 4_100, sensitivity: 1.08 },
+  { symbol: "CNE", sector: "Thương mại điện tử", country: "Trung Quốc", flag: "🇨🇳", model: "socialist", openPrice: 124.5, liquidity: 5_700, sensitivity: 1.02 },
+  { symbol: "LAA", sector: "Nông nghiệp", country: "Lào", flag: "🇱🇦", model: "socialist", openPrice: 72.6, liquidity: 3_400, sensitivity: 0.88 },
+  { symbol: "CUB", sector: "Y tế & dược phẩm", country: "Cuba", flag: "🇨🇺", model: "socialist", openPrice: 68.4, liquidity: 3_100, sensitivity: 0.84 },
 ];
 
 const EVENT_CATALOG = [
@@ -40,11 +40,13 @@ const EVENT_CATALOG = [
     tag: "KHỦNG HOẢNG",
     title: "Suy thoái toàn cầu lan rộng",
     description: "Đơn hàng giảm mạnh, thất nghiệp tăng và niềm tin của doanh nghiệp suy yếu.",
-    analysis: "Thị trường tư bản phản ứng nhanh và mạnh theo kỳ vọng nhà đầu tư; nhóm định hướng XHCN giảm sốc bằng đầu tư công và công cụ bình ổn.",
-    effects: {
-      capitalist: { momentum: -0.0058, volatility: 1.75 },
-      socialist: { momentum: -0.0032, volatility: 1.25 },
-    },
+    analysis: "Công nghệ Hoa Kỳ, ô tô Nhật Bản, chế tạo máy Đức và tài chính Anh giảm mạnh theo kỳ vọng; các ngành được điều phối công tại Việt Nam, Lào và Cuba giảm nhẹ hơn.",
+    impacts: [
+      ["UST", -0.0062, 1.72, "Giảm mạnh"], ["JPA", -0.006, 1.66, "Giảm mạnh"],
+      ["DEM", -0.0058, 1.62, "Giảm mạnh"], ["UKF", -0.0065, 1.9, "Giảm rất mạnh"],
+      ["VNE", -0.003, 1.2, "Giảm nhẹ"], ["CNE", -0.0038, 1.28, "Giảm"],
+      ["LAA", -0.0022, 1.12, "Giảm nhẹ"], ["CUB", -0.0016, 1.08, "Ít biến động"],
+    ],
   },
   {
     id: "technology-wave",
@@ -52,13 +54,11 @@ const EVENT_CATALOG = [
     tag: "CÔNG NGHỆ",
     title: "Làn sóng công nghệ mới",
     description: "Năng suất tăng nhanh, vốn đầu tư đổ vào doanh nghiệp công nghệ và tự động hóa.",
-    analysis: "Cơ chế vốn tư nhân giúp nhóm tư bản hấp thụ cơ hội nhanh; nhóm định hướng XHCN tăng chậm hơn nhưng ưu tiên lan tỏa công nghệ vào ngành chiến lược.",
-    symbols: ["USX", "JPX", "CNX", "VNX"],
-    spillover: 0.28,
-    effects: {
-      capitalist: { momentum: 0.0052, volatility: 1.45 },
-      socialist: { momentum: 0.0038, volatility: 1.16 },
-    },
+    analysis: "Công nghệ Hoa Kỳ và thương mại điện tử Trung Quốc hưởng lợi trực tiếp; ô tô Nhật Bản và chế tạo máy Đức tăng nhờ nhu cầu tự động hóa.",
+    impacts: [
+      ["UST", 0.0065, 1.55, "Tăng rất mạnh"], ["CNE", 0.0055, 1.28, "Tăng mạnh"],
+      ["JPA", 0.0028, 1.18, "Tăng"], ["DEM", 0.0032, 1.2, "Tăng"],
+    ],
   },
   {
     id: "banking-panic",
@@ -66,11 +66,12 @@ const EVENT_CATALOG = [
     tag: "TÀI CHÍNH",
     title: "Tin đồn rút tiền tại ngân hàng",
     description: "Tâm lý hoảng loạn lan nhanh, dòng tiền tìm nơi trú ẩn và thanh khoản co lại.",
-    analysis: "Ngân hàng định hướng lợi nhuận chịu áp lực rút vốn tức thời; sở hữu và điều phối nhà nước có thể chặn lây lan nhưng làm tăng gánh nặng cứu trợ.",
-    effects: {
-      capitalist: { momentum: -0.0066, volatility: 2.05 },
-      socialist: { momentum: -0.0035, volatility: 1.32 },
-    },
+    analysis: "Tài chính Anh chịu cú sốc trực tiếp; công nghệ Hoa Kỳ và các ngành thâm dụng vốn giảm theo thanh khoản, trong khi nông nghiệp Lào và y tế Cuba ít nhạy hơn.",
+    impacts: [
+      ["UKF", -0.008, 2.15, "Giảm rất mạnh"], ["UST", -0.0038, 1.45, "Giảm"],
+      ["JPA", -0.0028, 1.3, "Giảm"], ["DEM", -0.0026, 1.28, "Giảm"],
+      ["LAA", -0.0008, 1.03, "Ít ảnh hưởng"], ["CUB", -0.0005, 1.02, "Ít ảnh hưởng"],
+    ],
   },
   {
     id: "public-investment",
@@ -78,11 +79,11 @@ const EVENT_CATALOG = [
     tag: "ĐẦU TƯ CÔNG",
     title: "Gói hạ tầng quy mô lớn được công bố",
     description: "Vốn được đưa vào giao thông, năng lượng và dịch vụ thiết yếu để kích thích tổng cầu.",
-    analysis: "Nhóm định hướng XHCN huy động nguồn lực công trực tiếp và giữ ổn định dài hạn; nhóm tư bản hưởng lợi qua hợp đồng và hiệu ứng lan tỏa.",
-    effects: {
-      capitalist: { momentum: 0.0018, volatility: 1.08 },
-      socialist: { momentum: 0.0046, volatility: 0.82 },
-    },
+    analysis: "Năng lượng Việt Nam và chế tạo máy Đức tăng nhờ hạ tầng; nông nghiệp Lào hưởng lợi từ logistics, còn tài chính Anh tăng nhẹ qua nhu cầu vốn.",
+    impacts: [
+      ["VNE", 0.006, 0.86, "Tăng rất mạnh"], ["DEM", 0.004, 1.12, "Tăng mạnh"],
+      ["LAA", 0.0035, 0.9, "Tăng"], ["UKF", 0.0015, 1.05, "Tăng nhẹ"],
+    ],
   },
   {
     id: "tax-cut",
@@ -90,11 +91,11 @@ const EVENT_CATALOG = [
     tag: "THUẾ",
     title: "Chính sách giảm thuế doanh nghiệp",
     description: "Lợi nhuận kỳ vọng tăng, doanh nghiệp có thêm vốn để mở rộng sản xuất và tuyển dụng.",
-    analysis: "Doanh nghiệp tư nhân phản ứng rất nhanh với động lực lợi nhuận; nhóm định hướng XHCN hưởng lợi ít hơn vì còn cân đối ngân sách và mục tiêu xã hội.",
-    effects: {
-      capitalist: { momentum: 0.005, volatility: 1.28 },
-      socialist: { momentum: 0.0017, volatility: 1.04 },
-    },
+    analysis: "Công nghệ Hoa Kỳ, ô tô Nhật Bản, chế tạo máy Đức và tài chính Anh tăng nhanh vì lợi nhuận kỳ vọng cao hơn.",
+    impacts: [
+      ["UST", 0.0058, 1.34, "Tăng mạnh"], ["JPA", 0.0046, 1.25, "Tăng mạnh"],
+      ["DEM", 0.0044, 1.22, "Tăng mạnh"], ["UKF", 0.005, 1.36, "Tăng mạnh"],
+    ],
   },
   {
     id: "welfare-package",
@@ -102,11 +103,11 @@ const EVENT_CATALOG = [
     tag: "AN SINH",
     title: "Mở rộng gói an sinh và trợ cấp việc làm",
     description: "Thu nhập của nhóm dễ tổn thương được bảo vệ, sức mua trong nước dần phục hồi.",
-    analysis: "Nhóm định hướng XHCN coi an sinh là mục tiêu trực tiếp và công cụ giữ cầu; nhóm tư bản cân nhắc thêm chi phí thuế và ngân sách.",
-    effects: {
-      capitalist: { momentum: 0.0005, volatility: 0.94 },
-      socialist: { momentum: 0.0037, volatility: 0.72 },
-    },
+    analysis: "Y tế Cuba tăng trực tiếp; thương mại điện tử Trung Quốc và nông nghiệp Lào tăng theo sức mua, trong khi tài chính Anh gần như đi ngang.",
+    impacts: [
+      ["CUB", 0.0062, 0.82, "Tăng rất mạnh"], ["CNE", 0.0038, 0.92, "Tăng mạnh"],
+      ["LAA", 0.0028, 0.86, "Tăng"], ["UKF", 0.0003, 0.96, "Ít ảnh hưởng"],
+    ],
   },
   {
     id: "interest-rate-hike",
@@ -114,11 +115,12 @@ const EVENT_CATALOG = [
     tag: "LÃI SUẤT",
     title: "Ngân hàng trung ương tăng lãi suất",
     description: "Chi phí vay vốn tăng để kiềm chế lạm phát, dòng tiền đầu cơ bắt đầu rút khỏi thị trường.",
-    analysis: "Thị trường vốn phát triển phản ứng mạnh với giá tiền; nhóm định hướng XHCN kết hợp tín dụng chỉ đạo nên biên độ ngắn hạn thường được nén lại.",
-    effects: {
-      capitalist: { momentum: -0.0046, volatility: 1.55 },
-      socialist: { momentum: -0.0024, volatility: 1.12 },
-    },
+    analysis: "Tài chính Anh và công nghệ Hoa Kỳ giảm mạnh; ô tô Nhật Bản, chế tạo máy Đức và thương mại điện tử Trung Quốc giảm vì chi phí vay tăng.",
+    impacts: [
+      ["UKF", -0.0068, 1.8, "Giảm rất mạnh"], ["UST", -0.0055, 1.58, "Giảm mạnh"],
+      ["JPA", -0.0038, 1.38, "Giảm"], ["DEM", -0.0036, 1.34, "Giảm"],
+      ["CNE", -0.0025, 1.16, "Giảm nhẹ"],
+    ],
   },
   {
     id: "foreign-capital",
@@ -126,13 +128,11 @@ const EVENT_CATALOG = [
     tag: "HỘI NHẬP",
     title: "Dòng vốn quốc tế tăng đột biến",
     description: "Nhà đầu tư nước ngoài tìm kiếm thị trường mới, kéo theo công nghệ và chuỗi cung ứng.",
-    analysis: "Nhóm tư bản mở cửa dòng vốn rộng và tăng nhanh; nhóm định hướng XHCN chọn lọc lĩnh vực để cân bằng tăng trưởng với tự chủ kinh tế.",
-    symbols: ["VNX", "LAX", "DEX", "UKX"],
-    spillover: 0.35,
-    effects: {
-      capitalist: { momentum: 0.0044, volatility: 1.4 },
-      socialist: { momentum: 0.0033, volatility: 1.12 },
-    },
+    analysis: "Năng lượng Việt Nam, chế tạo máy Đức và tài chính Anh hút vốn trực tiếp; nông nghiệp Lào tăng nhẹ nhờ đầu tư chuỗi cung ứng.",
+    impacts: [
+      ["VNE", 0.0052, 1.22, "Tăng mạnh"], ["DEM", 0.0046, 1.38, "Tăng mạnh"],
+      ["UKF", 0.0048, 1.48, "Tăng mạnh, biến động cao"], ["LAA", 0.0024, 1.08, "Tăng nhẹ"],
+    ],
   },
   {
     id: "supply-shock",
@@ -140,11 +140,11 @@ const EVENT_CATALOG = [
     tag: "NGUỒN CUNG",
     title: "Chuỗi cung ứng bị đứt gãy",
     description: "Nguyên liệu khan hiếm, chi phí vận chuyển tăng và nhiều nhà máy phải giảm công suất.",
-    analysis: "Giá cả thị trường truyền tín hiệu thiếu hụt rất nhanh; nhóm định hướng XHCN can thiệp vào hàng thiết yếu để đổi biên lợi nhuận lấy ổn định.",
-    effects: {
-      capitalist: { momentum: -0.0042, volatility: 1.62 },
-      socialist: { momentum: -0.0028, volatility: 1.18 },
-    },
+    analysis: "Ô tô Nhật Bản và chế tạo máy Đức giảm mạnh do thiếu linh kiện; thương mại điện tử Trung Quốc giảm theo logistics, còn năng lượng Việt Nam tăng vì giá đầu vào.",
+    impacts: [
+      ["JPA", -0.006, 1.75, "Giảm rất mạnh"], ["DEM", -0.0058, 1.68, "Giảm mạnh"],
+      ["CNE", -0.0038, 1.28, "Giảm"], ["VNE", 0.0042, 1.3, "Tăng mạnh"],
+    ],
   },
   {
     id: "export-boom",
@@ -152,13 +152,12 @@ const EVENT_CATALOG = [
     tag: "XUẤT KHẨU",
     title: "Nhu cầu xuất khẩu tăng mạnh",
     description: "Đơn hàng quốc tế tăng, sản xuất mở rộng và dự trữ ngoại tệ được cải thiện.",
-    analysis: "Cả hai mô hình cùng hưởng lợi; khác biệt nằm ở cách lợi ích được phân phối giữa doanh nghiệp, ngân sách và các mục tiêu xã hội.",
-    symbols: ["VNX", "CNX", "JPX", "DEX"],
-    spillover: 0.3,
-    effects: {
-      capitalist: { momentum: 0.0042, volatility: 1.2 },
-      socialist: { momentum: 0.004, volatility: 0.94 },
-    },
+    analysis: "Ô tô Nhật Bản, chế tạo máy Đức, thương mại điện tử Trung Quốc và nông nghiệp Lào tăng theo đơn hàng; năng lượng Việt Nam hưởng lợi gián tiếp.",
+    impacts: [
+      ["JPA", 0.0054, 1.22, "Tăng mạnh"], ["DEM", 0.0052, 1.2, "Tăng mạnh"],
+      ["CNE", 0.0048, 1.08, "Tăng mạnh"], ["LAA", 0.0045, 0.94, "Tăng mạnh"],
+      ["VNE", 0.002, 0.96, "Tăng nhẹ"],
+    ],
   },
   {
     id: "anti-monopoly",
@@ -166,11 +165,11 @@ const EVENT_CATALOG = [
     tag: "ĐIỀU TIẾT",
     title: "Siết hành vi độc quyền trên thị trường",
     description: "Doanh nghiệp lớn bị kiểm soát giá và buộc mở thêm không gian cạnh tranh cho đối thủ nhỏ.",
-    analysis: "Lợi nhuận ngắn hạn có thể giảm, nhưng cạnh tranh và phúc lợi người tiêu dùng được củng cố; mức can thiệp khác nhau giữa hai mô hình.",
-    effects: {
-      capitalist: { momentum: -0.0018, volatility: 1.25 },
-      socialist: { momentum: 0.0015, volatility: 0.84 },
-    },
+    analysis: "Công nghệ Hoa Kỳ và thương mại điện tử Trung Quốc giảm vì biên lợi nhuận bị siết; người tiêu dùng và các ngành sản xuất hưởng lợi nhẹ từ cạnh tranh.",
+    impacts: [
+      ["UST", -0.0035, 1.35, "Giảm"], ["CNE", -0.003, 1.18, "Giảm"],
+      ["JPA", 0.0012, 0.96, "Tăng nhẹ"], ["DEM", 0.001, 0.94, "Tăng nhẹ"],
+    ],
   },
   {
     id: "consumer-boom",
@@ -178,11 +177,12 @@ const EVENT_CATALOG = [
     tag: "TIÊU DÙNG",
     title: "Sức mua trong nước bùng nổ",
     description: "Niềm tin người tiêu dùng tăng, bán lẻ và dịch vụ ghi nhận lượng cầu vượt dự báo.",
-    analysis: "Cạnh tranh tư nhân giúp nguồn cung phản ứng nhanh; điều tiết định hướng XHCN cố giữ tăng trưởng đi cùng ổn định giá và tiếp cận hàng hóa.",
-    effects: {
-      capitalist: { momentum: 0.0048, volatility: 1.32 },
-      socialist: { momentum: 0.0034, volatility: 0.9 },
-    },
+    analysis: "Thương mại điện tử Trung Quốc, ô tô Nhật Bản và công nghệ Hoa Kỳ tăng theo cầu; nông nghiệp Lào và y tế Cuba tăng ổn định hơn.",
+    impacts: [
+      ["CNE", 0.006, 1.25, "Tăng rất mạnh"], ["JPA", 0.0045, 1.25, "Tăng mạnh"],
+      ["UST", 0.0042, 1.3, "Tăng mạnh"], ["LAA", 0.0028, 0.88, "Tăng"],
+      ["CUB", 0.0022, 0.86, "Tăng nhẹ"],
+    ],
   },
 ];
 
@@ -225,6 +225,8 @@ function createPortfolio(team) {
     color: team.color,
     cash: STARTING_CASH,
     holdings: Object.fromEntries(MARKET_DEFINITIONS.map((market) => [market.symbol, 0])),
+    averageCost: Object.fromEntries(MARKET_DEFINITIONS.map((market) => [market.symbol, 0])),
+    realizedProfit: 0,
     feesPaid: 0,
     trades: 0,
   };
@@ -235,7 +237,7 @@ function createGame(teams, options = {}) {
   const durationMs = Number(options.durationMs || GAME_DURATION_MS);
   const eventIntervalMs = Number(options.eventIntervalMs || EVENT_INTERVAL_MS);
   const activeTeams = teams.filter((team) => team.players?.length);
-  if (activeTeams.length < 2) throw new Error("Cần ít nhất 2 đội để mở thị trường");
+  if (activeTeams.length < 1) throw new Error("Cần ít nhất 1 người để mở thị trường");
 
   return {
     phase: "trading",
@@ -293,6 +295,7 @@ function archiveEvents(game, at) {
       tag: event.tag,
       title: event.title,
       analysis: event.analysis,
+      affected: event.affected,
       resolvedAt: at,
     });
   }
@@ -301,13 +304,20 @@ function archiveEvents(game, at) {
 }
 
 function applyEvent(game, event, at) {
-  for (const market of game.markets) {
-    const direct = !event.symbols || event.symbols.includes(market.symbol);
-    const multiplier = (direct ? 1 : event.spillover || 0) * market.sensitivity;
-    if (!multiplier) continue;
-    const effect = event.effects[market.model];
-    market.eventMomentum += effect.momentum * multiplier;
-    market.eventVolatility += (effect.volatility - 1) * multiplier;
+  const affected = [];
+  for (const [symbol, momentum, volatility, label] of event.impacts) {
+    const market = getMarket(game, symbol);
+    if (!market) continue;
+    market.eventMomentum += momentum * market.sensitivity;
+    market.eventVolatility += (volatility - 1) * market.sensitivity;
+    affected.push({
+      symbol: market.symbol,
+      sector: market.sector,
+      country: market.country,
+      flag: market.flag,
+      direction: momentum > 0 ? "up" : momentum < 0 ? "down" : "flat",
+      label,
+    });
   }
 
   return {
@@ -316,6 +326,7 @@ function applyEvent(game, event, at) {
     tag: event.tag,
     title: event.title,
     description: event.description,
+    affected,
     analysis: event.analysis,
     startedAt: at,
     endsAt: at + game.eventIntervalMs,
@@ -414,12 +425,19 @@ function trade(game, teamId, order = {}, now = Date.now()) {
   if (side === "buy") {
     const total = roundPrice(gross + fee);
     if (portfolio.cash + 0.001 < total) return { ok: false, message: "Không đủ vốn để đặt lệnh mua" };
+    const oldQuantity = portfolio.holdings[market.symbol];
+    const oldCost = portfolio.averageCost[market.symbol] * oldQuantity;
     portfolio.cash = roundPrice(portfolio.cash - total);
     portfolio.holdings[market.symbol] += quantity;
+    portfolio.averageCost[market.symbol] = roundPrice((oldCost + total) / (oldQuantity + quantity));
   } else {
     if (portfolio.holdings[market.symbol] < quantity) return { ok: false, message: "Không đủ cổ phiếu để bán" };
     portfolio.cash = roundPrice(portfolio.cash + gross - fee);
     portfolio.holdings[market.symbol] -= quantity;
+    portfolio.realizedProfit = roundPrice(
+      portfolio.realizedProfit + gross - fee - portfolio.averageCost[market.symbol] * quantity,
+    );
+    if (!portfolio.holdings[market.symbol]) portfolio.averageCost[market.symbol] = 0;
   }
 
   const direction = side === "buy" ? 1 : -1;
@@ -453,6 +471,7 @@ function trade(game, teamId, order = {}, now = Date.now()) {
 function publicMarket(market) {
   return {
     symbol: market.symbol,
+    sector: market.sector,
     country: market.country,
     flag: market.flag,
     model: market.model,
@@ -487,9 +506,33 @@ function publicState(game, viewerTeamId = null) {
           teamId: viewer.teamId,
           cash: viewer.cash,
           holdings: { ...viewer.holdings },
+          averageCost: { ...viewer.averageCost },
+          realizedProfit: viewer.realizedProfit,
           feesPaid: viewer.feesPaid,
           trades: viewer.trades,
           netWorth: portfolioValue(game, viewer),
+          positions: game.markets
+            .filter((market) => viewer.holdings[market.symbol] > 0)
+            .map((market) => {
+              const quantity = viewer.holdings[market.symbol];
+              const averageCost = viewer.averageCost[market.symbol];
+              const invested = roundPrice(averageCost * quantity);
+              const marketValue = roundPrice(market.price * quantity);
+              const unrealizedProfit = roundPrice(marketValue - invested);
+              return {
+                symbol: market.symbol,
+                sector: market.sector,
+                country: market.country,
+                flag: market.flag,
+                quantity,
+                averageCost,
+                currentPrice: market.price,
+                invested,
+                marketValue,
+                unrealizedProfit,
+                unrealizedPct: invested ? roundPrice((unrealizedProfit / invested) * 100) : 0,
+              };
+            }),
         }
       : null,
   };

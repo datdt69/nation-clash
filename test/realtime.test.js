@@ -52,8 +52,8 @@ test("host tạo phòng, hai đội vào và giao dịch realtime", async (t) =>
   assert.equal(created.code.length, 5);
   assert.match(created.qrDataUrl, /^data:image\/png;base64,/);
 
-  const joinedFirst = await emitAck(first, "player:join", { code: created.code, nickname: "Đội Alpha" });
-  const joinedSecond = await emitAck(second, "player:join", { code: created.code, nickname: "Đội Beta" });
+  const joinedFirst = await emitAck(first, "player:join", { code: created.code, nickname: "An", teamId: "team-1" });
+  const joinedSecond = await emitAck(second, "player:join", { code: created.code, nickname: "Bình", teamId: "team-2" });
   assert.equal(joinedFirst.ok, true);
   assert.equal(joinedSecond.ok, true);
 
@@ -70,22 +70,22 @@ test("host tạo phòng, hai đội vào và giao dịch realtime", async (t) =>
   const bought = await emitAck(first, "player:trade", {
     code: created.code,
     playerToken: joinedFirst.playerToken,
-    symbol: "VNX",
+    symbol: "VNE",
     side: "buy",
     quantity: 10,
   });
   assert.equal(bought.ok, true);
   const afterTrade = await tradeState;
-  assert.equal(afterTrade.game.tradeTape[0].symbol, "VNX");
+  assert.equal(afterTrade.game.tradeTape[0].symbol, "VNE");
   assert.equal(afterTrade.game.tradeTape[0].quantity, 10);
   assert.equal(afterTrade.game.portfolio.teamId, joinedSecond.teamId);
 });
 
-test("phòng nhận tối đa 8 đội và chặn đội thứ 9", async (t) => {
+test("phòng nhận tối đa 56 người, 7 người mỗi đội và chặn người thứ 57", async (t) => {
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   const url = `http://127.0.0.1:${server.address().port}`;
   const host = createClient(url, { transports: ["websocket"] });
-  const clients = Array.from({ length: 9 }, () => createClient(url, { transports: ["websocket"] }));
+  const clients = Array.from({ length: 57 }, () => createClient(url, { transports: ["websocket"] }));
 
   t.after(async () => {
     host.close();
@@ -97,15 +97,44 @@ test("phòng nhận tối đa 8 đội và chặn đội thứ 9", async (t) => 
   await Promise.all([host, ...clients].map(connect));
   const created = await emitAck(host, "host:create");
   const joined = await Promise.all(
-    clients.slice(0, 8).map((client, index) => emitAck(client, "player:join", {
+    clients.slice(0, 56).map((client, index) => emitAck(client, "player:join", {
       code: created.code,
-      nickname: `Đội ${index + 1}`,
+      nickname: `Người ${index + 1}`,
+      teamId: `team-${Math.floor(index / 7) + 1}`,
     })),
   );
-  assert.equal(joined.filter((result) => result.ok).length, 8);
-  assert.equal(rooms.get(created.code).players.size, 8);
+  assert.equal(joined.filter((result) => result.ok).length, 56);
+  assert.equal(rooms.get(created.code).players.size, 56);
+  assert.deepEqual(rooms.get(created.code).teams.map((team) => team.players.length), Array(8).fill(7));
 
-  const overflow = await emitAck(clients[8], "player:join", { code: created.code, nickname: "Đội 9" });
+  const overflow = await emitAck(clients[56], "player:join", { code: created.code, nickname: "Người 57", teamId: "team-1" });
   assert.equal(overflow.ok, false);
-  assert.match(overflow.message, /đủ 8/i);
+  assert.match(overflow.message, /đủ 56/i);
+});
+
+test("host mở được thị trường chỉ với 1 người", async (t) => {
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const url = `http://127.0.0.1:${server.address().port}`;
+  const host = createClient(url, { transports: ["websocket"] });
+  const player = createClient(url, { transports: ["websocket"] });
+
+  t.after(async () => {
+    host.close();
+    player.close();
+    rooms.clear();
+    await new Promise((resolve) => server.close(resolve));
+  });
+
+  await Promise.all([host, player].map(connect));
+  const created = await emitAck(host, "host:create");
+  const joined = await emitAck(player, "player:join", {
+    code: created.code,
+    nickname: "Người thử",
+    teamId: "team-4",
+  });
+  assert.equal(joined.ok, true);
+  const playing = waitForState(player, (state) => state.status === "playing");
+  const started = await emitAck(host, "host:start", { code: created.code, hostToken: created.hostToken });
+  assert.equal(started.ok, true);
+  assert.equal((await playing).game.portfolio.teamId, "team-4");
 });

@@ -26,9 +26,10 @@ let player = load("marketPlayer");
 let view = host ? "host" : player ? "player" : "landing";
 let state = null;
 let hostMeta = {};
-let selectedSymbol = "VNX";
+let selectedSymbol = "VNE";
 let orderSide = "buy";
 let orderQuantity = 10;
+let ticketView = "order";
 let tradePending = false;
 let clockFrame = 0;
 let serverOffset = 0;
@@ -69,22 +70,22 @@ function showToast(message, type = "") {
 
 function landing() {
   const demos = [
-    ["🇺🇸", "USX", "182,40", "+1,28%"],
-    ["🇻🇳", "VNX", "96,80", "+0,74%"],
-    ["🇩🇪", "DEX", "158,60", "−0,32%"],
-    ["🇨🇳", "CNX", "124,50", "+1,04%"],
-    ["🇯🇵", "JPX", "146,80", "+0,61%"],
-    ["🇱🇦", "LAX", "72,60", "+0,22%"],
-    ["🇬🇧", "UKX", "131,20", "−0,47%"],
-    ["🇨🇺", "CBX", "68,40", "+0,18%"],
+    ["🇺🇸", "UST", "182,40", "+1,28%"],
+    ["🇻🇳", "VNE", "96,80", "+0,74%"],
+    ["🇩🇪", "DEM", "158,60", "−0,32%"],
+    ["🇨🇳", "CNE", "124,50", "+1,04%"],
+    ["🇯🇵", "JPA", "146,80", "+0,61%"],
+    ["🇱🇦", "LAA", "72,60", "+0,22%"],
+    ["🇬🇧", "UKF", "131,20", "−0,47%"],
+    ["🇨🇺", "CUB", "68,40", "+0,18%"],
   ];
   return `<main class="landing-screen screen">
     <section class="landing-hero">
       <div class="landing-topline">${brand()}<span class="live-chip">Giá cập nhật mỗi giây</span></div>
       <div class="landing-copy">
-        <p class="eyebrow">8 đội · 8 thị trường · 1 cuộc đua</p>
+        <p class="eyebrow">8 đội · tối đa 56 người · 8 ngành</p>
         <h1>Đọc biến động.<br><span>Chốt quyết định.</span></h1>
-        <p>Giao dịch cổ phiếu quốc gia mô phỏng, phản ứng với các cú sốc kinh tế và khám phá cách hai mô hình thị trường xử lý cùng một vấn đề.</p>
+        <p>Giao dịch tám ngành nghề của tám quốc gia, phản ứng với các cú sốc kinh tế và khám phá cách hai mô hình thị trường xử lý cùng một vấn đề.</p>
       </div>
       <div class="ticker-cloud" aria-hidden="true">
         ${demos.map(([flag, symbol, price, change]) => `<article class="ticker-demo"><span>${flag}</span><b>${symbol}</b><small><span>${price}</span><em>${change}</em></small></article>`).join("")}
@@ -94,10 +95,11 @@ function landing() {
       <div class="entry-card panel">
         <p class="eyebrow">Tham gia thị trường</p>
         <h2>${roomFromUrl ? `Phòng ${escapeHtml(roomFromUrl)}` : "Vào bằng mã phòng"}</h2>
-        <p>Mỗi thiết bị đại diện cho một đội và được cấp 100.000 vốn mô phỏng.</p>
+        <p>Mỗi người chọn một trong tám đội. Tối đa 7 người cùng dùng chung danh mục và 100.000 vốn của đội.</p>
         <form id="join-form" autocomplete="off">
           <div class="field"><label for="room-code">Mã phòng</label><input id="room-code" name="code" maxlength="5" value="${escapeHtml(roomFromUrl)}" placeholder="VD: K7M2P" autocapitalize="characters" required></div>
-          <div class="field"><label for="team-name">Tên đội</label><input id="team-name" name="nickname" maxlength="22" placeholder="VD: Sói Phố Wall" required></div>
+          <div class="field"><label for="player-name">Tên người chơi</label><input id="player-name" name="nickname" maxlength="22" placeholder="VD: Minh Anh" required></div>
+          <div class="field"><label for="team-choice">Chọn đội</label><select id="team-choice" name="teamId" required>${Array.from({ length: 8 }, (_, index) => `<option value="team-${index + 1}">Đội ${index + 1}</option>`).join("")}</select></div>
           <button class="primary-button" type="submit">Vào sàn giao dịch →</button>
         </form>
         <div class="entry-divider">HOẶC</div>
@@ -114,10 +116,11 @@ function loading() {
 
 function teamSlot(team, index) {
   const joined = Boolean(team.players.length);
-  const connected = team.players.some((member) => member.connected);
+  const connected = team.players.filter((member) => member.connected).length;
+  const memberNames = team.players.slice(0, 3).map((member) => escapeHtml(member.nickname)).join(", ");
   return `<article class="team-slot ${joined ? "joined" : ""}" style="--team-color:${safeColor(team.color)}">
     <span class="team-number">${String(index + 1).padStart(2, "0")}</span>
-    <div><b>${joined ? escapeHtml(team.name) : "Đang chờ đội vào"}</b><small>${joined ? (connected ? "Đã kết nối · sẵn sàng" : "Mất kết nối · giữ chỗ") : "Quét QR hoặc nhập mã phòng"}</small></div>
+    <div><b>${escapeHtml(team.name)} <em>${team.players.length}/7</em></b><small>${joined ? `${connected} online · ${memberNames}${team.players.length > 3 ? ` +${team.players.length - 3}` : ""}` : "Đang chờ người chơi chọn đội"}</small></div>
     <i class="team-online" aria-hidden="true"></i>
   </article>`;
 }
@@ -134,22 +137,21 @@ function lobbyHeader(isHost) {
 }
 
 function hostLobby() {
-  const joinUrl = hostMeta.joinUrl || `${location.origin}/?room=${state.code}`;
   return `<main class="lobby-screen screen">
     ${lobbyHeader(true)}
     <section class="lobby-main">
       <div class="join-display panel">
         <div class="qr-shell">${hostMeta.qrDataUrl ? `<img src="${hostMeta.qrDataUrl}" alt="Mã QR vào phòng ${escapeHtml(state.code)}">` : ""}</div>
-        <div class="join-copy"><p class="eyebrow">Quét để tham gia</p><h1>Vào phòng bằng điện thoại</h1><strong class="room-code-large">${escapeHtml(state.code)}</strong><p>Mỗi đội dùng một thiết bị. Người chơi có thể mua và bán cả tám mã trong suốt trận.</p><div class="join-link"><code>${escapeHtml(joinUrl)}</code><button class="icon-button" data-act="copy" aria-label="Sao chép">⧉</button></div></div>
+        <div class="join-copy compact"><p class="eyebrow">Quét để tham gia</p><strong class="room-code-large">${escapeHtml(state.code)}</strong></div>
       </div>
       <div class="teams-panel panel">
-        <div class="panel-heading"><div><p class="eyebrow">Danh sách tham gia</p><h2>Các đội trên sàn</h2></div><span class="player-count"><strong>${state.playersCount}</strong> / 8 đội</span></div>
+        <div class="panel-heading"><div><p class="eyebrow">Danh sách tham gia</p><h2>8 đội trên sàn</h2></div><span class="player-count"><strong>${state.playersCount}</strong> / 56 người</span></div>
         <div class="team-grid">${state.teams.map(teamSlot).join("")}</div>
       </div>
     </section>
     <footer class="lobby-footer">
       <div class="lobby-rules"><span><b>01</b> Giá chạy mỗi giây</span><span><b>02</b> 1–3 sự kiện mỗi phút</span><span><b>03</b> Giàu nhất sau 10 phút thắng</span></div>
-      <button class="primary-button start-market" data-act="start" ${state.playersCount < 2 ? "disabled" : ""}>Mở thị trường · ${state.playersCount}/8 đội</button>
+      <button class="primary-button start-market" data-act="start" ${state.playersCount < 1 ? "disabled" : ""}>Mở thị trường · ${state.playersCount}/56 người</button>
     </footer>
   </main>`;
 }
@@ -164,7 +166,7 @@ function playerLobby() {
         <div class="wait-copy"><p class="eyebrow">Đã vào phòng ${escapeHtml(state.code)}</p><h1>Chờ thị trường mở cửa</h1><p>Giữ màn hình này. Khi người điều khiển bắt đầu, tài khoản và biểu đồ sẽ tự động xuất hiện.</p><div class="wait-team" style="--team-color:${safeColor(team.color)}"><i></i><div><small>TÀI KHOẢN CỦA BẠN</small><b>${escapeHtml(team.name)}</b></div></div></div>
       </div>
     </section>
-    <footer class="lobby-footer"><div class="lobby-rules"><span><b>01</b> Theo dõi sự kiện</span><span><b>02</b> Chọn mã</span><span><b>03</b> Mua thấp, bán cao</span></div><span class="status-chip">${state.playersCount}/8 đội đã vào</span></footer>
+    <footer class="lobby-footer"><div class="lobby-rules"><span><b>01</b> Theo dõi sự kiện</span><span><b>02</b> Chọn ngành</span><span><b>03</b> Quản lý danh mục</span></div><span class="status-chip">${state.playersCount}/56 người đã vào</span></footer>
   </main>`;
 }
 
@@ -193,7 +195,7 @@ function eventStrip() {
   const game = state.game;
   const events = game.activeEvents;
   const content = events.length
-    ? events.map((event) => `<article class="event-card"><span class="event-icon">${escapeHtml(event.icon)}</span><div><small>${escapeHtml(event.tag)}</small><b>${escapeHtml(event.title)}</b><p>${escapeHtml(event.description)}</p></div></article>`).join("")
+    ? events.map((event) => `<article class="event-card"><span class="event-icon">${escapeHtml(event.icon)}</span><div><small>${escapeHtml(event.tag)}</small><b>${escapeHtml(event.title)}</b><p>${escapeHtml(event.description)}</p><div class="event-impacts">${event.affected.map((impact) => `<span class="${impact.direction}">${impact.flag} ${escapeHtml(impact.sector)} · ${escapeHtml(impact.country)}: <b>${escapeHtml(impact.label)}</b></span>`).join("")}</div></div></article>`).join("")
     : `<article class="event-empty"><span class="event-icon">⌛</span><div><b>Thị trường đang tự điều chỉnh</b><small>Chưa có cú sốc mới. Giá vẫn biến động theo cung và cầu.</small></div></article>`;
   return `<section class="event-strip">
     <div class="event-label"><p class="eyebrow">Bản tin thị trường</p><b>${events.length ? `Đợt sự kiện ${game.eventRound}` : "Chờ sự kiện đầu"}</b><small>Sự kiện tiếp theo: <span class="next-event" data-countdown-end="${game.nextEventAt}">--:--</span></small></div>
@@ -233,7 +235,7 @@ function chartSvg(market) {
   }).join("");
   const firstTime = new Date(history[0].at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
   const lastTime = new Date(history.at(-1).at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" });
-  return `<svg class="market-chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="Biểu đồ giá ${escapeHtml(market.symbol)}">
+  return `<svg class="market-chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="Biểu đồ giá ngành ${escapeHtml(market.sector)} của ${escapeHtml(market.country)}">
     <defs><linearGradient id="${gradientId}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="${color}" stop-opacity="0.28"></stop><stop offset="100%" stop-color="${color}" stop-opacity="0"></stop></linearGradient></defs>
     ${lines}
     <path d="${areaPath}" fill="url(#${gradientId})"></path>
@@ -259,7 +261,7 @@ function chartPanel() {
   const down = market.changePct < 0;
   return `<section class="chart-panel panel">
     <div class="chart-heading">
-      <div class="market-identity"><span class="market-flag">${market.flag}</span><div class="market-name"><b>${escapeHtml(market.symbol)} <span>${escapeHtml(market.country)}</span></b><small>${escapeHtml(market.modelName)} · biểu đồ 2 phút gần nhất</small></div></div>
+      <div class="market-identity"><span class="market-flag">${market.flag}</span><div class="market-name"><b>${escapeHtml(market.sector)} <span>${escapeHtml(market.country)}</span></b><small>${escapeHtml(market.symbol)} · ${escapeHtml(market.modelName)} · biểu đồ 2 phút</small></div></div>
       <div class="headline-price"><strong class="price">${formatPrice(market.price)}</strong><span class="change ${down ? "down" : ""}">${formatSigned(market.changePct, "%")}</span></div>
     </div>
     <div class="chart-wrap">${chartSvg(market)}</div>
@@ -271,13 +273,13 @@ function quoteCard(market) {
   const down = market.changePct < 0;
   return `<button class="quote-card ${market.symbol === selectedSymbol ? "selected" : ""}" data-symbol="${escapeHtml(market.symbol)}">
     <span class="quote-flag">${market.flag}</span>
-    <span class="quote-name"><b>${escapeHtml(market.symbol)} · ${escapeHtml(market.country)}</b><small>${market.model === "capitalist" ? "Tư bản chủ nghĩa" : "Định hướng XHCN"}</small></span>
+    <span class="quote-name"><b>${escapeHtml(market.sector)} · ${escapeHtml(market.country)}</b><small>${escapeHtml(market.symbol)} · ${market.model === "capitalist" ? "Tư bản chủ nghĩa" : "Định hướng XHCN"}</small></span>
     <span class="quote-values"><b class="quote-price">${formatPrice(market.price)}</b><small class="${down ? "down" : ""}">${formatSigned(market.changePct, "%")}</small></span>
   </button>`;
 }
 
 function quotesPanel() {
-  return `<section class="quotes-panel panel"><div class="side-heading"><b>Danh sách thị trường</b><small>8 mã mô phỏng</small></div><div class="quotes-list">${state.game.markets.map(quoteCard).join("")}</div></section>`;
+  return `<section class="quotes-panel panel"><div class="side-heading"><b>8 ngành giao dịch</b><small>Ghi rõ quốc gia</small></div><div class="quotes-list">${state.game.markets.map(quoteCard).join("")}</div></section>`;
 }
 
 function leaderboardPanel() {
@@ -303,6 +305,17 @@ function orderEstimate() {
   return orderSide === "buy" ? gross + fee : Math.max(0, gross - fee);
 }
 
+function positionsPanel(portfolio) {
+  if (!portfolio.positions.length) {
+    return `<div class="empty-portfolio"><span>◇</span><b>Danh mục đang trống</b><small>Mua một ngành để theo dõi giá vốn và lãi/lỗ tại đây.</small></div>`;
+  }
+  return `<div class="positions-list">${portfolio.positions.map((position) => `<article class="position-card" data-position-symbol="${escapeHtml(position.symbol)}">
+    <div class="position-main"><span>${position.flag}</span><div><b>${escapeHtml(position.sector)} · ${escapeHtml(position.country)}</b><small>${escapeHtml(position.symbol)} · ${integerFormat.format(position.quantity)} cổ phiếu</small></div><strong class="position-market-value">${formatMoney(position.marketValue)}</strong></div>
+    <div class="position-details"><span>Tiền đã mua <b>${formatMoney(position.invested)}</b></span><span>Giá vốn <b>${formatPrice(position.averageCost)}</b></span><span>Giá hiện tại <b class="position-current">${formatPrice(position.currentPrice)}</b></span><span class="position-profit ${position.unrealizedProfit < 0 ? "down" : "up"}">Lãi/lỗ <b>${formatSigned(position.unrealizedProfit, " đ")} · ${formatSigned(position.unrealizedPct, "%")}</b></span></div>
+    <div class="position-actions"><button data-position-symbol="${escapeHtml(position.symbol)}">Mở lệnh bán</button><button class="quick-sell" data-quick-sell="${escapeHtml(position.symbol)}" data-quantity="${position.quantity}" ${tradePending ? "disabled" : ""}>Bán hết</button></div>
+  </article>`).join("")}</div><div class="realized-profit">Lãi/lỗ đã chốt <b class="${portfolio.realizedProfit < 0 ? "down" : "up"}">${formatSigned(portfolio.realizedProfit, " đ")}</b></div>`;
+}
+
 function orderTicket() {
   const game = state.game;
   const portfolio = game.portfolio;
@@ -318,12 +331,15 @@ function orderTicket() {
       <div class="portfolio-stat"><small>Tiền khả dụng</small><b>${formatMoney(portfolio.cash)}</b></div>
       <div class="portfolio-stat"><small>Lãi / lỗ</small><b class="${profit < 0 ? "down" : "up"}">${formatSigned(profit, " đ")}</b></div>
     </div>
-    <div class="order-tabs"><button class="order-tab buy ${orderSide === "buy" ? "active" : ""}" data-side="buy">MUA</button><button class="order-tab sell ${orderSide === "sell" ? "active" : ""}" data-side="sell">BÁN</button></div>
-    <div class="order-symbol-row"><b>${market.flag} ${escapeHtml(market.symbol)} · ${formatPrice(market.price)}</b><small>Đang có: ${integerFormat.format(portfolio.holdings[market.symbol] || 0)}</small></div>
-    <div class="quantity-row"><label for="order-quantity">Số lượng</label><div class="quantity-control"><button data-act="quantity" data-step="-1" aria-label="Giảm">−</button><input id="order-quantity" type="number" inputmode="numeric" min="1" max="9999" value="${escapeHtml(orderQuantity)}"><button data-act="quantity" data-step="1" aria-label="Tăng">+</button></div></div>
-    <div class="quick-orders"><button data-quick="0.25">25%</button><button data-quick="0.5">50%</button><button data-quick="1">Tối đa</button></div>
-    <div class="order-summary"><span>Ước tính · phí 0,15%</span><b data-order-estimate>${formatMoney(orderEstimate())}</b></div>
-    <button class="submit-order ${orderSide === "sell" ? "sell" : ""}" data-act="trade" ${invalid ? "disabled" : ""}>${tradePending ? "ĐANG KHỚP LỆNH..." : `${orderSide === "buy" ? "MUA" : "BÁN"} ${quantity > 0 ? integerFormat.format(quantity) : 0} ${escapeHtml(market.symbol)}`}</button>
+    <div class="ticket-tabs"><button class="${ticketView === "order" ? "active" : ""}" data-ticket-view="order">Đặt lệnh</button><button class="${ticketView === "portfolio" ? "active" : ""}" data-ticket-view="portfolio">Danh mục <span>${portfolio.positions.length}</span></button></div>
+    ${ticketView === "portfolio" ? positionsPanel(portfolio) : `<div class="order-form">
+      <div class="order-tabs"><button class="order-tab buy ${orderSide === "buy" ? "active" : ""}" data-side="buy">MUA</button><button class="order-tab sell ${orderSide === "sell" ? "active" : ""}" data-side="sell">BÁN</button></div>
+      <div class="order-symbol-row"><b>${market.flag} ${escapeHtml(market.sector)} · ${escapeHtml(market.country)}</b><small>${escapeHtml(market.symbol)} · Đang có ${integerFormat.format(portfolio.holdings[market.symbol] || 0)}</small></div>
+      <div class="quantity-row"><label for="order-quantity">Số lượng</label><div class="quantity-control"><button data-act="quantity" data-step="-1" aria-label="Giảm">−</button><input id="order-quantity" type="number" inputmode="numeric" min="1" max="9999" value="${escapeHtml(orderQuantity)}"><button data-act="quantity" data-step="1" aria-label="Tăng">+</button></div></div>
+      <div class="quick-orders"><button data-quick="0.25">25%</button><button data-quick="0.5">50%</button><button data-quick="1">Tối đa</button></div>
+      <div class="order-summary"><span>Ước tính · phí 0,15%</span><b data-order-estimate>${formatMoney(orderEstimate())}</b></div>
+      <button class="submit-order ${orderSide === "sell" ? "sell" : ""}" data-act="trade" ${invalid ? "disabled" : ""}>${tradePending ? "ĐANG KHỚP LỆNH..." : `${orderSide === "buy" ? "MUA" : "BÁN"} ${quantity > 0 ? integerFormat.format(quantity) : 0} ${escapeHtml(market.symbol)}`}</button>
+    </div>`}
   </section>`;
 }
 
@@ -379,8 +395,8 @@ function patchOrderTicket() {
   }
   const symbol = document.querySelector(".order-symbol-row b");
   const holding = document.querySelector(".order-symbol-row small");
-  if (symbol) symbol.textContent = `${market.flag} ${market.symbol} · ${formatPrice(market.price)}`;
-  if (holding) holding.textContent = `Đang có: ${integerFormat.format(portfolio.holdings[market.symbol] || 0)}`;
+  if (symbol) symbol.textContent = `${market.flag} ${market.sector} · ${market.country}`;
+  if (holding) holding.textContent = `${market.symbol} · Đang có ${integerFormat.format(portfolio.holdings[market.symbol] || 0)}`;
   const estimate = document.querySelector("[data-order-estimate]");
   if (estimate) estimate.textContent = formatMoney(orderEstimate());
   const submit = document.querySelector('[data-act="trade"]');
@@ -391,9 +407,26 @@ function patchOrderTicket() {
       ? "ĐANG KHỚP LỆNH..."
       : `${orderSide === "buy" ? "MUA" : "BÁN"} ${quantity > 0 ? integerFormat.format(quantity) : 0} ${selectedSymbol}`;
   }
+  for (const position of portfolio.positions) {
+    const card = document.querySelector(`.position-card[data-position-symbol="${position.symbol}"]`);
+    if (!card) continue;
+    const marketValue = card.querySelector(".position-market-value");
+    const current = card.querySelector(".position-current");
+    const profitNode = card.querySelector(".position-profit");
+    if (marketValue) marketValue.textContent = formatMoney(position.marketValue);
+    if (current) current.textContent = formatPrice(position.currentPrice);
+    if (profitNode) {
+      profitNode.classList.toggle("down", position.unrealizedProfit < 0);
+      profitNode.classList.toggle("up", position.unrealizedProfit >= 0);
+      const value = profitNode.querySelector("b");
+      if (value) value.textContent = `${formatSigned(position.unrealizedProfit, " đ")} · ${formatSigned(position.unrealizedPct, "%")}`;
+    }
+  }
 }
 
 function patchTrading(previousGame) {
+  const workspace = document.querySelector(".market-workspace");
+  const workspaceScroll = workspace?.scrollTop || 0;
   const chart = document.querySelector(".chart-panel");
   if (!chart) return render();
   chart.outerHTML = chartPanel();
@@ -411,10 +444,18 @@ function patchTrading(previousGame) {
     const events = document.querySelector(".event-strip");
     if (events) events.outerHTML = eventStrip();
   }
+  if (workspace) workspace.scrollTop = workspaceScroll;
 }
 
 function render() {
   cancelAnimationFrame(clockFrame);
+  const previousWorkspace = document.querySelector(".market-workspace");
+  const previousQuotes = document.querySelector(".quotes-list");
+  const scrollState = {
+    workspaceTop: previousWorkspace?.scrollTop || 0,
+    quotesTop: previousQuotes?.scrollTop || 0,
+    quotesLeft: previousQuotes?.scrollLeft || 0,
+  };
   const active = document.activeElement;
   const restoreInput = active?.id === "order-quantity" ? {
     start: active.selectionStart,
@@ -426,6 +467,14 @@ function render() {
   else if (state.status === "lobby") app.innerHTML = view === "host" ? hostLobby() : playerLobby();
   else if (state.status === "finished") app.innerHTML = finishScreen();
   else app.innerHTML = trading();
+
+  const nextWorkspace = document.querySelector(".market-workspace");
+  const nextQuotes = document.querySelector(".quotes-list");
+  if (nextWorkspace) nextWorkspace.scrollTop = scrollState.workspaceTop;
+  if (nextQuotes) {
+    nextQuotes.scrollTop = scrollState.quotesTop;
+    nextQuotes.scrollLeft = scrollState.quotesLeft;
+  }
 
   if (restoreInput) {
     const input = document.querySelector("#order-quantity");
@@ -463,13 +512,37 @@ async function copyJoinLink() {
   }
 }
 
+function sendTrade({ symbol = selectedSymbol, side = orderSide, quantity = Number(orderQuantity) } = {}) {
+  if (tradePending) return;
+  tradePending = true;
+  render();
+  socket.emit("player:trade", {
+    code: player.code,
+    playerToken: player.playerToken,
+    symbol,
+    side,
+    quantity: Number(quantity),
+  }, (result) => {
+    tradePending = false;
+    if (!result.ok) {
+      showToast(result.message, "error");
+      render();
+      return;
+    }
+    const transaction = result.transaction;
+    showToast(`Đã ${transaction.side === "buy" ? "mua" : "bán"} ${integerFormat.format(transaction.quantity)} ${transaction.symbol}`);
+    render();
+  });
+}
+
 app.addEventListener("submit", (event) => {
   if (event.target.id !== "join-form") return;
   event.preventDefault();
   const form = new FormData(event.target);
   const code = String(form.get("code") || "").trim().toUpperCase();
   const nickname = String(form.get("nickname") || "").trim();
-  socket.emit("player:join", { code, nickname }, (result) => {
+  const teamId = String(form.get("teamId") || "");
+  socket.emit("player:join", { code, nickname, teamId }, (result) => {
     if (!result.ok) return showToast(result.message, "error");
     player = { code, nickname, ...result };
     host = null;
@@ -495,6 +568,29 @@ app.addEventListener("input", (event) => {
 });
 
 app.addEventListener("click", async (event) => {
+  const quickSell = event.target.closest("[data-quick-sell]");
+  if (quickSell) {
+    sendTrade({ symbol: quickSell.dataset.quickSell, side: "sell", quantity: Number(quickSell.dataset.quantity) });
+    return;
+  }
+
+  const ticketTab = event.target.closest("[data-ticket-view]");
+  if (ticketTab) {
+    ticketView = ticketTab.dataset.ticketView;
+    render();
+    return;
+  }
+
+  const position = event.target.closest("[data-position-symbol]");
+  if (position) {
+    selectedSymbol = position.dataset.positionSymbol;
+    orderSide = "sell";
+    orderQuantity = Math.max(1, state.game.portfolio.holdings[selectedSymbol] || 1);
+    ticketView = "order";
+    render();
+    return;
+  }
+
   const quote = event.target.closest("[data-symbol]");
   if (quote) {
     selectedSymbol = quote.dataset.symbol;
@@ -569,26 +665,7 @@ app.addEventListener("click", async (event) => {
     return;
   }
   if (action === "trade") {
-    if (tradePending) return;
-    tradePending = true;
-    render();
-    socket.emit("player:trade", {
-      code: player.code,
-      playerToken: player.playerToken,
-      symbol: selectedSymbol,
-      side: orderSide,
-      quantity: Number(orderQuantity),
-    }, (result) => {
-      tradePending = false;
-      if (!result.ok) {
-        showToast(result.message, "error");
-        render();
-        return;
-      }
-      const transaction = result.transaction;
-      showToast(`Đã ${transaction.side === "buy" ? "mua" : "bán"} ${integerFormat.format(transaction.quantity)} ${transaction.symbol}`);
-      render();
-    });
+    sendTrade();
   }
 });
 
@@ -600,7 +677,7 @@ socket.on("state", (nextState) => {
   state = nextState;
   serverOffset = Number(nextState.serverNow || Date.now()) - Date.now();
   if (state.game && !state.game.markets.some((market) => market.symbol === selectedSymbol)) {
-    selectedSymbol = state.game.markets[0]?.symbol || "VNX";
+    selectedSymbol = state.game.markets[0]?.symbol || "VNE";
   }
   if (canPatch) patchTrading(previousState.game);
   else render();

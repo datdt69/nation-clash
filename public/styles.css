@@ -218,7 +218,8 @@ input:focus-visible {
   font-weight: 750;
 }
 
-.field input {
+.field input,
+.field select {
   width: 100%;
   height: 50px;
   border: 1px solid var(--line);
@@ -227,6 +228,14 @@ input:focus-visible {
   background: #0a1014;
   color: var(--text);
   font-weight: 700;
+}
+
+.field select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--green) 50%), linear-gradient(135deg, var(--green) 50%, transparent 50%);
+  background-position: calc(100% - 19px) 21px, calc(100% - 13px) 21px;
+  background-repeat: no-repeat;
+  background-size: 6px 6px;
 }
 
 .field input::placeholder {
@@ -540,6 +549,16 @@ input:focus-visible {
   line-height: 1.55;
 }
 
+.join-copy.compact {
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.join-copy.compact .room-code-large {
+  margin-bottom: 0;
+}
+
 .join-link {
   max-width: 100%;
   display: flex;
@@ -636,6 +655,13 @@ input:focus-visible {
 .team-slot b {
   display: block;
   font-size: 0.84rem;
+}
+
+.team-slot b em {
+  margin-left: 5px;
+  color: var(--team-color);
+  font-size: 0.58rem;
+  font-style: normal;
 }
 
 .team-slot small {
@@ -778,8 +804,9 @@ input:focus-visible {
 .trading-screen {
   height: 100dvh;
   display: grid;
-  grid-template-rows: 62px 112px minmax(0, 1fr);
+  grid-template-rows: 62px 138px minmax(0, 1fr);
   overflow: hidden;
+  overflow-anchor: none;
 }
 
 .trade-header {
@@ -881,7 +908,7 @@ input:focus-visible {
   min-width: 0;
   display: grid;
   grid-template-columns: 38px minmax(0, 1fr);
-  align-items: center;
+  align-items: start;
   gap: 10px;
   border: 1px solid rgba(255, 209, 102, 0.19);
   border-radius: 12px;
@@ -925,6 +952,30 @@ input:focus-visible {
   white-space: nowrap;
 }
 
+.event-impacts {
+  max-height: 38px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 5px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.event-impacts span {
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  padding: 2px 6px;
+  background: #0a1014;
+  color: #aab7bd;
+  font-size: 0.51rem;
+  white-space: nowrap;
+}
+
+.event-impacts span.up b { color: var(--green); }
+.event-impacts span.down b { color: var(--red); }
+.event-impacts span b { display: inline; margin: 0; font-size: inherit; }
+
 .event-empty {
   grid-template-columns: 38px minmax(0, 1fr);
   border-color: var(--line-soft);
@@ -950,6 +1001,7 @@ input:focus-visible {
   gap: 10px;
   padding: 10px;
   overflow: hidden;
+  overflow-anchor: none;
 }
 
 .chart-panel {
@@ -1270,6 +1322,124 @@ input:focus-visible {
   flex: 0 0 auto;
   padding: 12px;
 }
+
+.ticket-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  margin-bottom: 9px;
+  padding: 3px;
+  border-radius: 9px;
+  background: #090e12;
+}
+
+.ticket-tabs button {
+  height: 31px;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.64rem;
+  font-weight: 800;
+}
+
+.ticket-tabs button.active {
+  background: var(--surface-2);
+  color: var(--text);
+  box-shadow: inset 0 -2px var(--green);
+}
+
+.ticket-tabs span {
+  margin-left: 4px;
+  color: var(--green);
+}
+
+.positions-list {
+  max-height: 245px;
+  display: grid;
+  gap: 6px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+.position-card {
+  border: 1px solid var(--line-soft);
+  border-radius: 9px;
+  padding: 8px;
+  background: #0a1014;
+}
+
+.position-main {
+  display: grid;
+  grid-template-columns: 25px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+}
+
+.position-main b,
+.position-main small { display: block; }
+.position-main b { font-size: 0.64rem; }
+.position-main small { margin-top: 2px; color: var(--muted); font-size: 0.52rem; }
+.position-main strong { font-size: 0.63rem; }
+
+.position-details {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 8px;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 0.5rem;
+}
+
+.position-details span { display: flex; justify-content: space-between; gap: 5px; }
+.position-details b { color: var(--text); }
+.position-details .up b, .realized-profit .up { color: var(--green); }
+.position-details .down b, .realized-profit .down { color: var(--red); }
+
+.position-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  margin-top: 7px;
+}
+
+.position-actions button {
+  height: 27px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: #a9b5bb;
+  font-size: 0.52rem;
+  font-weight: 800;
+}
+
+.position-actions .quick-sell {
+  border-color: rgba(255, 107, 118, 0.35);
+  background: var(--red-soft);
+  color: var(--red);
+}
+
+.realized-profit {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 0.56rem;
+}
+
+.empty-portfolio {
+  min-height: 132px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 5px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.empty-portfolio span { color: var(--green); font-size: 1.4rem; }
+.empty-portfolio b { color: var(--text); font-size: 0.72rem; }
+.empty-portfolio small { max-width: 230px; font-size: 0.55rem; line-height: 1.4; }
 
 .portfolio-strip {
   display: grid;
@@ -1698,7 +1868,7 @@ input:focus-visible {
 
   .trading-screen {
     height: 100dvh;
-    grid-template-rows: 56px 104px minmax(0, 1fr);
+    grid-template-rows: 56px 132px minmax(0, 1fr);
   }
 
   .trade-header { padding: 0 9px; }
@@ -1729,6 +1899,7 @@ input:focus-visible {
   .event-cards { grid-auto-columns: minmax(220px, 86vw); gap: 6px; }
   .event-card, .event-empty { padding: 7px 9px; }
   .event-card p { max-width: 205px; }
+  .event-impacts { max-height: 43px; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; }
 
   .market-workspace {
     display: flex;
@@ -1785,6 +1956,7 @@ input:focus-visible {
   .quote-values { display: flex; justify-content: space-between; gap: 5px; text-align: left; }
   .quote-name small { display: none; }
   .order-ticket { flex: 0 0 auto; padding: 11px; }
+  .positions-list { max-height: 310px; }
   .submit-order { height: 46px; }
   .leaderboard-panel { flex: 0 0 300px; }
 
@@ -1811,7 +1983,7 @@ input:focus-visible {
 }
 
 @media (min-width: 821px) and (max-height: 750px) {
-  .trading-screen { grid-template-rows: 56px 98px minmax(0, 1fr); }
+  .trading-screen { grid-template-rows: 56px 126px minmax(0, 1fr); }
   .trade-header .brand-copy small { display: none; }
   .event-strip { padding-block: 7px; }
   .chart-heading { padding-top: 11px; }
