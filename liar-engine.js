@@ -14,7 +14,7 @@ const CARD_TYPES={
  tax:{name:"Thuế & điều tiết",short:"THUẾ",icon:"⚖",category:"regulation",desc:"Hạn chế mất cân đối và tạo nguồn thu"},
  balance:{name:"Lợi ích hài hòa",short:"CÂN BẰNG",icon:"✦",category:"wild",desc:"Lá đặc biệt: hợp lệ với mọi mục tiêu"},
 };
-const CARD_COUNTS={private:11,state:8,fdi:10,coop:11,public:7,social:10,tax:7,balance:6};
+const CARD_COUNTS={private:10,state:7,fdi:10,coop:10,public:7,social:10,tax:6,balance:4};
 const DECK_SIZE=Object.values(CARD_COUNTS).reduce((sum,n)=>sum+n,0);
 const FINISH_BONUSES={1:25,2:18,3:12,4:7};
 const CRISES=[
