@@ -549,6 +549,16 @@ input:focus-visible {
   line-height: 1.55;
 }
 
+.join-copy.compact {
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.join-copy.compact .room-code-large {
+  margin-bottom: 0;
+}
+
 .join-link {
   max-width: 100%;
   display: flex;
