@@ -6,11 +6,21 @@ Game bluff realtime cho lớp học, lấy cảm hứng từ Liar's Bar và minh
 
 - Host mở phòng trên laptop và chiếu bàn chơi lên máy chiếu.
 - 2–8 đội tham gia bằng điện thoại; mỗi đội chỉ thấy bài riêng của mình.
+- Bộ bài mỗi vòng có đúng 40 lá; đủ 8 đội thì mỗi đội nhận 5 lá và không còn lá thừa.
 - Các đội có vị trí cố định quanh bàn và đánh theo chiều kim đồng hồ.
 - Mỗi vòng công bố một mục tiêu: Tăng trưởng, An sinh hoặc Điều tiết.
 - Đội đến lượt úp 1–3 lá và tự động tuyên bố tất cả thuộc mục tiêu vòng.
 - Đội kế tiếp tố “Nói dối” hoặc chọn bài để đánh tiếp.
 - Sau 8 vòng, hệ thống tính điểm theo chế độ host đã chọn.
+
+## Cấu trúc bộ bài cố định
+
+- 12 lá Tăng trưởng: 6 Doanh nghiệp tư nhân + 6 FDI.
+- 12 lá An sinh: 6 Hợp tác xã + 6 An sinh xã hội.
+- 12 lá Điều tiết: 4 Doanh nghiệp nhà nước + 4 Đầu tư công + 4 Thuế.
+- 4 lá Cân bằng, hợp lệ với mọi mục tiêu.
+
+Vì mỗi mục tiêu chỉ có tối đa 16 lá hợp lệ nếu tính cả Cân bằng, người chơi có thể dựa vào bài trên tay và tổng số lá đã được tuyên bố để phát hiện bluff.
 
 ## Hai chế độ
 
