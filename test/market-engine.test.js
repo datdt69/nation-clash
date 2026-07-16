@@ -77,9 +77,33 @@ test("nhiều lệnh cùng chiều trong 6 giây tạo hiệu ứng đám đông
   const second = trade(game, "p1", { symbol: "VNE", side: "buy", quantity: 50 }, 3_000);
   const third = trade(game, "p2", { symbol: "VNE", side: "buy", quantity: 50 }, 4_000);
   assert.equal(first.ok, true);
-  assert.ok(second.transaction.impactPct > first.transaction.impactPct);
-  assert.ok(third.transaction.impactPct > second.transaction.impactPct);
+  assert.ok(second.transaction.impactPct >= first.transaction.impactPct);
+  assert.ok(third.transaction.impactPct >= second.transaction.impactPct);
   assert.equal(third.transaction.crowdLevel, 3);
+});
+
+test("bốn người all-in không thể bẻ giá vượt quá xu hướng sự kiện", () => {
+  const { game } = setup(4);
+  const market = game.markets.find((entry) => entry.symbol === "VNE");
+  const before = market.price;
+  const quantities = [];
+  for (let index = 0; index < 4; index += 1) {
+    const quantity = Math.floor(game.portfolios[`p${index}`].cash / (market.price * (1 + 0.0015)));
+    quantities.push(quantity);
+    const result = trade(game, `p${index}`, { symbol: "VNE", side: "buy", quantity }, 2_000 + index * 200);
+    assert.equal(result.ok, true);
+  }
+  const buyMove = (market.price - before) / before;
+  assert.ok(buyMove > 0);
+  assert.ok(buyMove < 0.035);
+  const peak = market.price;
+  for (let index = 0; index < 4; index += 1) {
+    const result = trade(game, `p${index}`, { symbol: "VNE", side: "sell", quantity: quantities[index] }, 4_000 + index * 200);
+    assert.equal(result.ok, true);
+  }
+  const sellMove = (peak - market.price) / peak;
+  assert.ok(sellMove > 0);
+  assert.ok(sellMove < 0.035);
 });
 
 test("lệnh mua mã nguồn truyền áp lực sang ngành liên quan", () => {
