@@ -10,7 +10,7 @@ function emitAck(socket, event, payload) {
   });
 }
 
-function waitForState(socket, predicate, timeout = 3000) {
+function waitForState(socket, predicate, timeout = 3_000) {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
       socket.off("state", handler);
@@ -26,88 +26,66 @@ function waitForState(socket, predicate, timeout = 3000) {
   });
 }
 
-test("host tạo phòng và bắt đầu Liar Market với hai đội", async (t) => {
+async function connect(socket) {
+  if (socket.connected) return;
+  await new Promise((resolve) => socket.once("connect", resolve));
+}
+
+test("host tạo phòng, hai đội vào và giao dịch realtime", async (t) => {
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-  const port = server.address().port;
-  const url = `http://127.0.0.1:${port}`;
+  const url = `http://127.0.0.1:${server.address().port}`;
   const host = createClient(url, { transports: ["websocket"] });
-  const p1 = createClient(url, { transports: ["websocket"] });
-  const p2 = createClient(url, { transports: ["websocket"] });
+  const first = createClient(url, { transports: ["websocket"] });
+  const second = createClient(url, { transports: ["websocket"] });
 
   t.after(async () => {
     host.close();
-    p1.close();
-    p2.close();
+    first.close();
+    second.close();
     rooms.clear();
     await new Promise((resolve) => server.close(resolve));
   });
 
-  await Promise.all(
-    [host, p1, p2].map(
-      (socket) =>
-        new Promise((resolve) =>
-          socket.connected ? resolve() : socket.once("connect", resolve),
-        ),
-    ),
-  );
-
-  const created = await emitAck(host, "host:create", undefined);
+  await Promise.all([host, first, second].map(connect));
+  const created = await emitAck(host, "host:create");
   assert.equal(created.ok, true);
   assert.equal(created.code.length, 5);
+  assert.match(created.qrDataUrl, /^data:image\/png;base64,/);
 
-  const joined1 = await emitAck(p1, "player:join", {
-    code: created.code,
-    nickname: "An",
-  });
-  assert.equal(joined1.ok, true);
-  const joined2 = await emitAck(p2, "player:join", {code:created.code,nickname:"Bình"});
-  assert.equal(joined2.ok, true);
+  const joinedFirst = await emitAck(first, "player:join", { code: created.code, nickname: "Đội Alpha" });
+  const joinedSecond = await emitAck(second, "player:join", { code: created.code, nickname: "Đội Beta" });
+  assert.equal(joinedFirst.ok, true);
+  assert.equal(joinedSecond.ok, true);
 
-  const playingState = waitForState(p1, (state) => state.status === "playing");
-  const started = await emitAck(host, "host:start", {
-    code: created.code,
-    hostToken: created.hostToken,
-  });
+  const firstPlaying = waitForState(first, (state) => state.status === "playing");
+  const secondPlaying = waitForState(second, (state) => state.status === "playing");
+  const started = await emitAck(host, "host:start", { code: created.code, hostToken: created.hostToken });
   assert.equal(started.ok, true);
-  const state = await playingState;
-  assert.equal(state.playersCount, 2);
-  assert.ok(state.game);
-  assert.equal(state.game.turnTeamId, joined1.teamId);
-  assert.equal(state.game.hand.length, 8);
-  assert.equal(state.game.economies[joined2.teamId].handCount, 8);
-  assert.equal(state.game.economies[joined2.teamId].hand, undefined);
+  const [firstState, secondState] = await Promise.all([firstPlaying, secondPlaying]);
+  assert.equal(firstState.game.markets.length, 8);
+  assert.equal(firstState.game.portfolio.teamId, joinedFirst.teamId);
+  assert.equal(secondState.game.portfolio.teamId, joinedSecond.teamId);
 
-  const turnState = waitForState(p2, (s) => s.game?.pile.length === 1);
-  const played = await emitAck(p1, "player:play", {
+  const tradeState = waitForState(second, (state) => state.game?.tradeTape[0]?.teamId === joinedFirst.teamId);
+  const bought = await emitAck(first, "player:trade", {
     code: created.code,
-    playerToken: joined1.playerToken,
-    cardIds: [state.game.hand[0].id],
+    playerToken: joinedFirst.playerToken,
+    symbol: "VNX",
+    side: "buy",
+    quantity: 10,
   });
-  assert.equal(played.ok, true);
-  const afterPlay = await turnState;
-  assert.equal(afterPlay.game.turnTeamId, joined2.teamId);
-  assert.equal(afterPlay.game.pile[0].count, 1);
-  assert.equal(afterPlay.game.pile[0].cards, undefined);
-
-  const revealState = waitForState(host, (s) => s.game?.phase === "reveal");
-  const challenged = await emitAck(p2, "player:challenge", {
-    code: created.code,
-    playerToken: joined2.playerToken,
-  });
-  assert.equal(challenged.ok, true);
-  const revealed = await revealState;
-  assert.equal(revealed.game.hand, null);
-  assert.equal(revealed.game.reveal.cards.length, 1);
+  assert.equal(bought.ok, true);
+  const afterTrade = await tradeState;
+  assert.equal(afterTrade.game.tradeTape[0].symbol, "VNX");
+  assert.equal(afterTrade.game.tradeTape[0].quantity, 10);
+  assert.equal(afterTrade.game.portfolio.teamId, joinedSecond.teamId);
 });
 
-test("phòng nhận đủ 8 đại diện, mỗi đội một người và chặn người thứ 9", async (t) => {
+test("phòng nhận tối đa 8 đội và chặn đội thứ 9", async (t) => {
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-  const port = server.address().port;
-  const url = `http://127.0.0.1:${port}`;
+  const url = `http://127.0.0.1:${server.address().port}`;
   const host = createClient(url, { transports: ["websocket"] });
-  const clients = Array.from({ length: 9 }, () =>
-    createClient(url, { transports: ["websocket"] }),
-  );
+  const clients = Array.from({ length: 9 }, () => createClient(url, { transports: ["websocket"] }));
 
   t.after(async () => {
     host.close();
@@ -116,37 +94,18 @@ test("phòng nhận đủ 8 đại diện, mỗi đội một người và chặ
     await new Promise((resolve) => server.close(resolve));
   });
 
-  await Promise.all(
-    [host, ...clients].map(
-      (socket) =>
-        new Promise((resolve) =>
-          socket.connected ? resolve() : socket.once("connect", resolve),
-        ),
-    ),
+  await Promise.all([host, ...clients].map(connect));
+  const created = await emitAck(host, "host:create");
+  const joined = await Promise.all(
+    clients.slice(0, 8).map((client, index) => emitAck(client, "player:join", {
+      code: created.code,
+      nickname: `Đội ${index + 1}`,
+    })),
   );
+  assert.equal(joined.filter((result) => result.ok).length, 8);
+  assert.equal(rooms.get(created.code).players.size, 8);
 
-  const created = await emitAck(host, "host:create", undefined);
-  const results = await Promise.all(
-    clients.slice(0, 8).map((client, index) =>
-      emitAck(client, "player:join", {
-        code: created.code,
-        nickname: `Người ${index + 1}`,
-      }),
-    ),
-  );
-  assert.equal(results.filter((result) => result.ok).length, 8);
-
-  const room = rooms.get(created.code);
-  assert.equal(room.players.size, 8);
-  assert.deepEqual(
-    room.teams.map((team) => team.players.length),
-    Array(8).fill(1),
-  );
-
-  const overflow = await emitAck(clients[8], "player:join", {
-    code: created.code,
-    nickname: "Người 9",
-  });
+  const overflow = await emitAck(clients[8], "player:join", { code: created.code, nickname: "Đội 9" });
   assert.equal(overflow.ok, false);
   assert.match(overflow.message, /đủ 8/i);
 });
