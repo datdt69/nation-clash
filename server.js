@@ -5,7 +5,7 @@ const http = require("node:http");
 const QRCode = require("qrcode");
 const { Server } = require("socket.io");
 const { createTeam, serializeTeam } = require("./game-engine");
-const { createGame, tick, setInput, setCommand, buy, winner } = require("./shield-engine");
+const { createGame, tick, play, challenge, winner, publicState } = require("./liar-engine");
 
 const PORT = Number(process.env.PORT || 3000);
 const app = express();
@@ -32,7 +32,8 @@ function state(room, host = false, viewerTeamId = null) {
   return {
     code: room.code, status: room.status, playersCount: room.players.size, maxPlayers: 8,
     teams: room.teams.map(team => serializeTeam(team, host)),
-    game: room.game || null,
+    mode: room.mode,
+    game: room.game ? publicState(room.game, viewerTeamId) : null,
     champions: room.champions,
   };
 }
@@ -44,15 +45,14 @@ function emitState(room) {
 }
 function finish(room) {
   room.status = "finished";
-  const teams = activeTeams(room);
   room.champions = { teamId: winner(room.game) };
   emitState(room);
 }
 function start(room) {
-  if (!room.players.size) throw new Error("Cần ít nhất 1 đại diện");
+  if (room.players.size < 2) throw new Error("Liar Market cần ít nhất 2 đội");
   room.status = "playing";
   room.champions = null;
-  room.game = createGame(room.teams);
+  room.game = createGame(room.teams, { mode: room.mode });
   emitState(room);
 }
 
@@ -64,7 +64,7 @@ io.on("connection", socket => {
       const host = socket.handshake.headers["x-forwarded-host"] || socket.handshake.headers.host;
       const joinUrl = `${proto}://${host}/?room=${code}`;
       const qrDataUrl = await QRCode.toDataURL(joinUrl,{margin:1,width:360});
-      const room = { code, hostToken: token(), joinUrl, qrDataUrl, players: new Map(), teams: Array.from({length:8}, (_,i) => createTeam(i)), status:"lobby", game:null, champions:null, createdAt:Date.now() };
+      const room = { code, hostToken: token(), joinUrl, qrDataUrl, players: new Map(), teams: Array.from({length:8}, (_,i) => createTeam(i)), status:"lobby", mode:"socialist", game:null, champions:null, createdAt:Date.now() };
       rooms.set(code, room);
       socket.join(`${code}:host`);
       callback({ ok:true, code, hostToken:room.hostToken, joinUrl, qrDataUrl });
@@ -80,6 +80,7 @@ io.on("connection", socket => {
     const room=rooms.get(String(code||"").toUpperCase()); if(!room||room.hostToken!==hostToken)return cb({ok:false,message:"Không có quyền"});
     try{start(room);cb({ok:true});}catch(e){cb({ok:false,message:e.message});}
   });
+  socket.on("host:mode", ({code,hostToken,mode}={},cb=()=>{}) => { const room=rooms.get(String(code||"").toUpperCase());if(!room||room.hostToken!==hostToken||room.status!=="lobby")return cb({ok:false,message:"Không thể đổi chế độ"});if(!["socialist","capitalist"].includes(mode))return cb({ok:false,message:"Chế độ không hợp lệ"});room.mode=mode;cb({ok:true});emitState(room); });
   socket.on("host:end", ({code,hostToken}={},cb=()=>{}) => { const room=rooms.get(String(code||"").toUpperCase()); if(!room||room.hostToken!==hostToken)return cb({ok:false}); finish(room);cb({ok:true}); });
   socket.on("player:join", ({code,nickname,playerToken}={},cb=()=>{}) => {
     const room=rooms.get(String(code||"").trim().toUpperCase()); const name=clean(nickname);
@@ -93,18 +94,16 @@ io.on("connection", socket => {
     socket.data.player={roomCode:room.code,playerId:player.id}; socket.join(`${room.code}:players`);
     cb({ok:true,playerToken:player.token,playerId:player.id,teamId:player.teamId}); emitState(room);
   });
-  socket.on("player:input", ({code,playerToken,x,y}={}) => { const room=rooms.get(String(code||"").toUpperCase()); const player=room&&findPlayer(room,playerToken); if(room?.status==="playing"&&player)setInput(room.game,player.teamId,x,y); });
-  socket.on("player:command", ({code,playerToken,command}={},cb=()=>{}) => { const room=rooms.get(String(code||"").toUpperCase()); const player=room&&findPlayer(room,playerToken); if(room?.status!=="playing"||!player)return cb({ok:false});cb({ok:setCommand(room.game,player.teamId,command)});emitState(room); });
-  socket.on("player:buy", ({code,playerToken,item}={},cb=()=>{}) => { const room=rooms.get(String(code||"").toUpperCase()); const player=room&&findPlayer(room,playerToken); if(room?.status!=="playing"||!player)return cb({ok:false,message:"Trận chưa bắt đầu"});const result=buy(room.game,player.teamId,item);cb(result);emitState(room); });
+  socket.on("player:play", ({code,playerToken,cardIds}={},cb=()=>{}) => { const room=rooms.get(String(code||"").toUpperCase());const player=room&&findPlayer(room,playerToken);if(room?.status!=="playing"||!player)return cb({ok:false,message:"Trận chưa bắt đầu"});const result=play(room.game,player.teamId,cardIds);cb(result);emitState(room); });
+  socket.on("player:challenge", ({code,playerToken}={},cb=()=>{}) => { const room=rooms.get(String(code||"").toUpperCase());const player=room&&findPlayer(room,playerToken);if(room?.status!=="playing"||!player)return cb({ok:false,message:"Trận chưa bắt đầu"});const result=challenge(room.game,player.teamId);cb(result);emitState(room); });
   socket.on("disconnect",()=>{const id=socket.data.player;const room=id&&rooms.get(id.roomCode);const player=room?.players.get(id.playerId);if(player){player.connected=false;emitState(room);}});
 });
 
-let last=Date.now();
 setInterval(()=>{
-  const now=Date.now(),dt=Math.min(.05,(now-last)/1000);last=now;
-  for(const room of rooms.values()) if(room.status==="playing") { if(tick(room.game,room.teams,dt,now).finished) finish(room); else emitState(room); }
-},100).unref();
+  const now=Date.now();
+  for(const room of rooms.values()) if(room.status==="playing") { const before=room.game.phase+room.game.round+room.game.turnIndex;if(tick(room.game,now).finished) finish(room);else if(before!==room.game.phase+room.game.round+room.game.turnIndex)emitState(room); }
+},250).unref();
 setInterval(()=>{for(const [code,room] of rooms)if(Date.now()-room.createdAt>3*60*60*1000)rooms.delete(code);},1800000).unref();
 
-if(require.main===module)server.listen(PORT,"0.0.0.0",()=>console.log(`Vietnam 2045 tại http://localhost:${PORT}`));
+if(require.main===module)server.listen(PORT,"0.0.0.0",()=>console.log(`Liar Market Bar tại http://localhost:${PORT}`));
 module.exports={app,server,rooms};
