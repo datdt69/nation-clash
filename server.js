@@ -5,7 +5,7 @@ const http = require("node:http");
 const QRCode = require("qrcode");
 const { Server } = require("socket.io");
 const { createTeam, serializeTeam } = require("./game-engine");
-const { createGame, tick, play, challenge, winner, publicState } = require("./liar-engine");
+const { createGame, tick, trade, finishGame, winner, publicState } = require("./market-engine");
 
 const PORT = Number(process.env.PORT || 3000);
 const app = express();
@@ -13,95 +13,198 @@ app.set("trust proxy", true);
 app.use(express.static(path.join(__dirname, "public")));
 app.get("/health", (_req, res) => res.json({ ok: true, rooms: rooms.size }));
 app.get("/{*splat}", (_req, res) => res.sendFile(path.join(__dirname, "public/index.html")));
+
 const server = http.createServer(app);
-const io = new Server(server, { transports: ["websocket", "polling"] });
+const io = new Server(server, {
+  transports: ["websocket", "polling"],
+  pingInterval: 20_000,
+  pingTimeout: 20_000,
+});
 const rooms = new Map();
 
-const token = (n = 18) => crypto.randomBytes(n).toString("base64url");
+const token = (size = 18) => crypto.randomBytes(size).toString("base64url");
+const clean = (value) => String(value || "").replace(/[<>]/g, "").replace(/\s+/g, " ").trim().slice(0, 22);
+const findPlayer = (room, playerToken) => [...room.players.values()].find((player) => player.token === playerToken);
+
 function roomCode() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code;
-  do { code = Array.from({length:5}, () => chars[crypto.randomInt(chars.length)]).join(""); } while (rooms.has(code));
+  do {
+    code = Array.from({ length: 5 }, () => characters[crypto.randomInt(characters.length)]).join("");
+  } while (rooms.has(code));
   return code;
 }
-const clean = value => String(value || "").replace(/[<>]/g, "").replace(/\s+/g, " ").trim().slice(0, 22);
-const activeTeams = room => room.teams.filter(t => t.players.length);
-const findPlayer = (room, playerToken) => [...room.players.values()].find(p => p.token === playerToken);
 
-function state(room, host = false, viewerTeamId = null) {
+function roomState(room, viewerTeamId = null) {
   return {
-    code: room.code, status: room.status, playersCount: room.players.size, maxPlayers: 8,
-    teams: room.teams.map(team => serializeTeam(team, host)),
+    code: room.code,
+    status: room.status,
+    playersCount: room.players.size,
+    maxPlayers: 8,
+    serverNow: Date.now(),
+    teams: room.teams.map(serializeTeam),
     game: room.game ? publicState(room.game, viewerTeamId) : null,
     champions: room.champions,
   };
 }
+
 function emitState(room) {
-  io.to(`${room.code}:host`).emit("state", state(room, true));
+  io.to(`${room.code}:host`).emit("state", roomState(room));
   for (const player of room.players.values()) {
-    if (player.connected) io.to(player.socketId).emit("state", state(room, false, player.teamId));
+    if (player.connected) io.to(player.socketId).emit("state", roomState(room, player.teamId));
   }
 }
+
 function finish(room) {
+  if (!room.game) return;
+  finishGame(room.game);
   room.status = "finished";
   room.champions = { teamId: winner(room.game) };
   emitState(room);
 }
+
 function start(room) {
-  if (room.players.size < 2) throw new Error("Liar Market cần ít nhất 2 đội");
+  if (room.players.size < 2) throw new Error("Cần ít nhất 2 đội để mở thị trường");
   room.status = "playing";
   room.champions = null;
   room.game = createGame(room.teams);
   emitState(room);
 }
 
-io.on("connection", socket => {
+io.on("connection", (socket) => {
   socket.on("host:create", async (callback = () => {}) => {
     try {
       const code = roomCode();
-      const proto = String(socket.handshake.headers["x-forwarded-proto"] || "http").split(",")[0];
-      const host = socket.handshake.headers["x-forwarded-host"] || socket.handshake.headers.host;
-      const joinUrl = `${proto}://${host}/?room=${code}`;
-      const qrDataUrl = await QRCode.toDataURL(joinUrl,{margin:1,width:360});
-      const room = { code, hostToken: token(), joinUrl, qrDataUrl, players: new Map(), teams: Array.from({length:8}, (_,i) => createTeam(i)), status:"lobby", game:null, champions:null, createdAt:Date.now() };
+      const protocol = String(socket.handshake.headers["x-forwarded-proto"] || "http").split(",")[0];
+      const requestHost = socket.handshake.headers["x-forwarded-host"] || socket.handshake.headers.host;
+      const joinUrl = `${protocol}://${requestHost}/?room=${code}`;
+      const qrDataUrl = await QRCode.toDataURL(joinUrl, {
+        margin: 1,
+        width: 420,
+        color: { dark: "#081015", light: "#f8faf7" },
+      });
+      const room = {
+        code,
+        hostToken: token(),
+        joinUrl,
+        qrDataUrl,
+        players: new Map(),
+        teams: Array.from({ length: 8 }, (_, index) => createTeam(index)),
+        status: "lobby",
+        game: null,
+        champions: null,
+        createdAt: Date.now(),
+      };
       rooms.set(code, room);
       socket.join(`${code}:host`);
-      callback({ ok:true, code, hostToken:room.hostToken, joinUrl, qrDataUrl });
+      callback({ ok: true, code, hostToken: room.hostToken, joinUrl, qrDataUrl });
       emitState(room);
-    } catch (error) { callback({ok:false,message:error.message}); }
-  });
-  socket.on("host:resume", ({code,hostToken}={}, cb=()=>{}) => {
-    const room=rooms.get(String(code||"").toUpperCase());
-    if(!room||room.hostToken!==hostToken) return cb({ok:false,message:"Không thể khôi phục màn điều khiển"});
-    socket.join(`${room.code}:host`); cb({ok:true,code:room.code,joinUrl:room.joinUrl,qrDataUrl:room.qrDataUrl}); emitState(room);
-  });
-  socket.on("host:start", ({code,hostToken}={},cb=()=>{}) => {
-    const room=rooms.get(String(code||"").toUpperCase()); if(!room||room.hostToken!==hostToken)return cb({ok:false,message:"Không có quyền"});
-    try{start(room);cb({ok:true});}catch(e){cb({ok:false,message:e.message});}
-  });
-  socket.on("host:end", ({code,hostToken}={},cb=()=>{}) => { const room=rooms.get(String(code||"").toUpperCase()); if(!room||room.hostToken!==hostToken)return cb({ok:false}); finish(room);cb({ok:true}); });
-  socket.on("player:join", ({code,nickname,playerToken}={},cb=()=>{}) => {
-    const room=rooms.get(String(code||"").trim().toUpperCase()); const name=clean(nickname);
-    if(!room)return cb({ok:false,message:"Không tìm thấy phòng"}); if(!name)return cb({ok:false,message:"Nhập tên trước đã"});
-    let player=playerToken?findPlayer(room,playerToken):null;
-    if(player){player.connected=true;player.socketId=socket.id;player.nickname=name;}
-    else{
-      if(room.status!=="lobby")return cb({ok:false,message:"Trận đã bắt đầu"}); if(room.players.size>=8)return cb({ok:false,message:"Đủ 8 đại diện"});
-      const team=room.teams.find(t=>!t.players.length); player={id:token(8),token:token(),nickname:name,teamId:team.id,connected:true,socketId:socket.id}; room.players.set(player.id,player); team.players.push(player);
+    } catch (error) {
+      callback({ ok: false, message: error.message });
     }
-    socket.data.player={roomCode:room.code,playerId:player.id}; socket.join(`${room.code}:players`);
-    cb({ok:true,playerToken:player.token,playerId:player.id,teamId:player.teamId}); emitState(room);
   });
-  socket.on("player:play", ({code,playerToken,cardIds}={},cb=()=>{}) => { const room=rooms.get(String(code||"").toUpperCase());const player=room&&findPlayer(room,playerToken);if(room?.status!=="playing"||!player)return cb({ok:false,message:"Trận chưa bắt đầu"});const result=play(room.game,player.teamId,cardIds);cb(result);if(result.ok&&room.game.phase==="finished")finish(room);else emitState(room); });
-  socket.on("player:challenge", ({code,playerToken}={},cb=()=>{}) => { const room=rooms.get(String(code||"").toUpperCase());const player=room&&findPlayer(room,playerToken);if(room?.status!=="playing"||!player)return cb({ok:false,message:"Trận chưa bắt đầu"});const result=challenge(room.game,player.teamId);cb(result);emitState(room); });
-  socket.on("disconnect",()=>{const id=socket.data.player;const room=id&&rooms.get(id.roomCode);const player=room?.players.get(id.playerId);if(player){player.connected=false;emitState(room);}});
+
+  socket.on("host:resume", ({ code, hostToken } = {}, callback = () => {}) => {
+    const room = rooms.get(String(code || "").toUpperCase());
+    if (!room || room.hostToken !== hostToken) return callback({ ok: false, message: "Không thể khôi phục màn điều khiển" });
+    socket.join(`${room.code}:host`);
+    callback({ ok: true, code: room.code, joinUrl: room.joinUrl, qrDataUrl: room.qrDataUrl });
+    emitState(room);
+  });
+
+  socket.on("host:start", ({ code, hostToken } = {}, callback = () => {}) => {
+    const room = rooms.get(String(code || "").toUpperCase());
+    if (!room || room.hostToken !== hostToken) return callback({ ok: false, message: "Không có quyền điều khiển phòng" });
+    if (room.status !== "lobby") return callback({ ok: false, message: "Phòng không còn ở trạng thái chờ" });
+    try {
+      start(room);
+      callback({ ok: true });
+    } catch (error) {
+      callback({ ok: false, message: error.message });
+    }
+  });
+
+  socket.on("host:end", ({ code, hostToken } = {}, callback = () => {}) => {
+    const room = rooms.get(String(code || "").toUpperCase());
+    if (!room || room.hostToken !== hostToken) return callback({ ok: false, message: "Không có quyền điều khiển phòng" });
+    if (!room.game) return callback({ ok: false, message: "Trận chưa bắt đầu" });
+    finish(room);
+    callback({ ok: true });
+  });
+
+  socket.on("player:join", ({ code, nickname, playerToken } = {}, callback = () => {}) => {
+    const room = rooms.get(String(code || "").trim().toUpperCase());
+    const name = clean(nickname);
+    if (!room) return callback({ ok: false, message: "Không tìm thấy phòng" });
+    if (!name) return callback({ ok: false, message: "Nhập tên đội trước đã" });
+
+    let player = playerToken ? findPlayer(room, playerToken) : null;
+    if (player) {
+      player.connected = true;
+      player.socketId = socket.id;
+      player.nickname = name;
+      room.teams.find((team) => team.id === player.teamId).name = name;
+    } else {
+      if (room.status !== "lobby") return callback({ ok: false, message: "Thị trường đã mở, không thể thêm đội mới" });
+      if (room.players.size >= 8) return callback({ ok: false, message: "Phòng đã đủ 8 đội" });
+      const team = room.teams.find((candidate) => !candidate.players.length);
+      player = {
+        id: token(8),
+        token: token(),
+        nickname: name,
+        teamId: team.id,
+        connected: true,
+        socketId: socket.id,
+      };
+      team.name = name;
+      team.players.push(player);
+      room.players.set(player.id, player);
+    }
+
+    socket.data.player = { roomCode: room.code, playerId: player.id };
+    socket.join(`${room.code}:players`);
+    callback({ ok: true, playerToken: player.token, playerId: player.id, teamId: player.teamId });
+    emitState(room);
+  });
+
+  socket.on("player:trade", ({ code, playerToken, symbol, side, quantity } = {}, callback = () => {}) => {
+    const room = rooms.get(String(code || "").toUpperCase());
+    const player = room && findPlayer(room, playerToken);
+    if (!room || room.status !== "playing" || !player) return callback({ ok: false, message: "Tài khoản giao dịch không hợp lệ" });
+    const result = trade(room.game, player.teamId, { symbol, side, quantity });
+    callback(result);
+    if (result.ok) emitState(room);
+  });
+
+  socket.on("disconnect", () => {
+    const identity = socket.data.player;
+    const room = identity && rooms.get(identity.roomCode);
+    const player = room?.players.get(identity.playerId);
+    if (player) {
+      player.connected = false;
+      emitState(room);
+    }
+  });
 });
 
-setInterval(()=>{
-  const now=Date.now();
-  for(const room of rooms.values()) if(room.status==="playing") { const before=room.game.phase+room.game.round+room.game.turnIndex;if(tick(room.game,now).finished) finish(room);else if(before!==room.game.phase+room.game.round+room.game.turnIndex)emitState(room); }
-},250).unref();
-setInterval(()=>{for(const [code,room] of rooms)if(Date.now()-room.createdAt>3*60*60*1000)rooms.delete(code);},1800000).unref();
+setInterval(() => {
+  const now = Date.now();
+  for (const room of rooms.values()) {
+    if (room.status !== "playing") continue;
+    const result = tick(room.game, now);
+    if (result.finished) finish(room);
+    else if (result.changed) emitState(room);
+  }
+}, 500).unref();
 
-if(require.main===module)server.listen(PORT,"0.0.0.0",()=>console.log(`Liar Market tại http://localhost:${PORT}`));
-module.exports={app,server,rooms};
+setInterval(() => {
+  for (const [code, room] of rooms) {
+    if (Date.now() - room.createdAt > 3 * 60 * 60_000) rooms.delete(code);
+  }
+}, 30 * 60_000).unref();
+
+if (require.main === module) {
+  server.listen(PORT, "0.0.0.0", () => console.log(`Sàn Kinh Tế đang chạy tại http://localhost:${PORT}`));
+}
+
+module.exports = { app, server, rooms };
