@@ -73,8 +73,8 @@ test("host tạo phòng và bắt đầu Liar Market với hai đội", async (t
   assert.equal(state.playersCount, 2);
   assert.ok(state.game);
   assert.equal(state.game.turnTeamId, joined1.teamId);
-  assert.equal(state.game.hand.length, 6);
-  assert.equal(state.game.economies[joined2.teamId].handCount, 6);
+  assert.equal(state.game.hand.length, 5);
+  assert.equal(state.game.economies[joined2.teamId].handCount, 5);
   assert.equal(state.game.economies[joined2.teamId].hand, undefined);
 
   const turnState = waitForState(p2, (s) => s.game?.pile.length === 1);
