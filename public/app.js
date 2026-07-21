@@ -17,7 +17,8 @@ const escapeHtml = (value) => String(value ?? "").replace(/[&<>'"]/g, (character
   "'": "&#39;",
   '"': "&quot;",
 })[character]);
-const safeColor = (value) => (/^#[0-9a-f]{6}$/i.test(String(value || "")) ? value : "#58e08f");
+const safeColor = (value) => (/^#[0-9a-f]{6}$/i.test(String(value || "")) ? value : "#087a45");
+const PLAYABLE_TEAM_NUMBERS = [1, 2, 3, 4, 5, 6, 8, 9];
 const numberFormat = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 });
 const integerFormat = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 });
 
@@ -33,14 +34,14 @@ let ticketView = "order";
 let tradePending = false;
 let clockFrame = 0;
 let serverOffset = 0;
-let hostGameMinutes = 10;
-let hostEventMinutes = 2;
+let hostGameMinutes = 15;
+let hostEventMinutes = 1.5;
 
 function brand() {
-  return `<div class="brand">
+  return `<button class="brand" type="button" data-act="home" aria-label="Về trang chủ" title="Về trang chủ">
     <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
     <span class="brand-copy"><b>Sàn Kinh Tế</b><small>Thị trường mô phỏng realtime</small></span>
-  </div>`;
+  </button>`;
 }
 
 function formatPrice(value) {
@@ -70,6 +71,20 @@ function showToast(message, type = "") {
   setTimeout(() => toast.remove(), 2_700);
 }
 
+function askConfirmation({ title, message, confirmLabel = "Xác nhận" }) {
+  return new Promise((resolve) => {
+    const dialog = document.createElement("dialog");
+    dialog.className = "confirm-dialog";
+    dialog.innerHTML = `<form method="dialog"><span class="confirm-icon">!</span><div><h2>${escapeHtml(title)}</h2><p>${escapeHtml(message)}</p></div><div class="confirm-actions"><button class="secondary-button" value="cancel">Hủy</button><button class="danger-button" value="confirm">${escapeHtml(confirmLabel)}</button></div></form>`;
+    dialog.addEventListener("close", () => {
+      resolve(dialog.returnValue === "confirm");
+      dialog.remove();
+    }, { once: true });
+    document.body.append(dialog);
+    dialog.showModal();
+  });
+}
+
 function landing() {
   const demos = [
     ["🇺🇸", "UST", "182,40", "+1,28%"],
@@ -87,7 +102,7 @@ function landing() {
       <div class="landing-copy">
         <p class="eyebrow">8 đội · tối đa 56 người · 12 ngành</p>
         <h1>Đọc biến động.<br><span>Chốt quyết định.</span></h1>
-        <p>Giao dịch tám ngành nghề của tám quốc gia, phản ứng với các cú sốc kinh tế và khám phá cách hai mô hình thị trường xử lý cùng một vấn đề.</p>
+        <p>Giao dịch mười hai ngành nghề của mười hai quốc gia, phản ứng với các cú sốc kinh tế và khám phá cách hai mô hình thị trường xử lý cùng một vấn đề.</p>
       </div>
       <div class="ticker-cloud" aria-hidden="true">
         ${demos.map(([flag, symbol, price, change]) => `<article class="ticker-demo"><span>${flag}</span><b>${symbol}</b><small><span>${price}</span><em>${change}</em></small></article>`).join("")}
@@ -101,7 +116,7 @@ function landing() {
         <form id="join-form" autocomplete="off">
           <div class="field"><label for="room-code">Mã phòng</label><input id="room-code" name="code" maxlength="5" value="${escapeHtml(roomFromUrl)}" placeholder="VD: K7M2P" autocapitalize="characters" required></div>
           <div class="field"><label for="player-name">Tên người chơi</label><input id="player-name" name="nickname" maxlength="22" placeholder="VD: Minh Anh" required></div>
-          <div class="field"><label for="team-choice">Chọn đội</label><select id="team-choice" name="teamId" required>${Array.from({ length: 8 }, (_, index) => `<option value="team-${index + 1}">Đội ${index + 1}</option>`).join("")}</select></div>
+          <div class="field"><label for="team-choice">Chọn đội</label><select id="team-choice" name="teamId" required>${PLAYABLE_TEAM_NUMBERS.map((number) => `<option value="team-${number}">Đội ${number}</option>`).join("")}</select></div>
           <button class="primary-button" type="submit">Vào sàn giao dịch →</button>
         </form>
         <div class="entry-divider">HOẶC</div>
@@ -121,7 +136,7 @@ function teamSlot(team, index) {
   const connected = team.players.filter((member) => member.connected).length;
   const memberNames = team.players.slice(0, 3).map((member) => escapeHtml(member.nickname)).join(", ");
   return `<article class="team-slot ${joined ? "joined" : ""}" style="--team-color:${safeColor(team.color)}">
-    <span class="team-number">${String(index + 1).padStart(2, "0")}</span>
+    <span class="team-number">${String(team.number ?? index + 1).padStart(2, "0")}</span>
     <div><b>${escapeHtml(team.name)} <em>${team.players.length}/7</em></b><small>${joined ? `${connected} online · ${memberNames}${team.players.length > 3 ? ` +${team.players.length - 3}` : ""}` : "Đang chờ người chơi chọn đội"}</small></div>
     <i class="team-online" aria-hidden="true"></i>
   </article>`;
@@ -133,6 +148,7 @@ function lobbyHeader(isHost) {
     <div class="header-actions">
       <span class="room-chip"><span>Mã phòng</span><b>${escapeHtml(state.code)}</b></span>
       ${isHost ? `<button class="secondary-button" data-act="copy">Sao chép đường dẫn</button>` : ""}
+      <button class="secondary-button home-button" data-act="home" aria-label="Về trang chủ">← <span>Trang chủ</span></button>
       <button class="icon-button" data-act="fullscreen" aria-label="Toàn màn hình">⛶</button>
     </div>
   </header>`;
@@ -152,10 +168,10 @@ function hostLobby() {
       </div>
     </section>
     <footer class="lobby-footer">
-      <div class="lobby-rules"><span><b>01</b> Mỗi người có 100.000đ</span><span><b>02</b> Event kéo dài ${hostEventMinutes} phút</span><span><b>03</b> Xếp hạng theo TB đội</span></div>
+      <div class="lobby-rules"><span><b>01</b> Mỗi người có 100.000đ</span><span><b>02</b> Tin mới mỗi ${String(hostEventMinutes).replace(".", ",")} phút</span><span><b>03</b> Xếp hạng theo TB đội</span></div>
       <div class="host-time-settings">
-        <label>Thị trường<select id="host-game-minutes">${[10, 15, 20, 25, 30].map((minutes) => `<option value="${minutes}" ${minutes === hostGameMinutes ? "selected" : ""}>${minutes} phút</option>`).join("")}</select></label>
-        <label>Mỗi event<select id="host-event-minutes">${[1, 2, 3, 4, 5].map((minutes) => `<option value="${minutes}" ${minutes === hostEventMinutes ? "selected" : ""}>${minutes} phút</option>`).join("")}</select></label>
+        <label><span>◷ Thị trường</span><select id="host-game-minutes" aria-label="Thời lượng thị trường">${[10, 15, 20, 25, 30].map((minutes) => `<option value="${minutes}" ${minutes === hostGameMinutes ? "selected" : ""}>${minutes} phút</option>`).join("")}</select></label>
+        <label><span>⚡ Chu kỳ tin</span><select id="host-event-minutes" aria-label="Chu kỳ sự kiện">${[1, 1.5, 2, 3, 4, 5].map((minutes) => `<option value="${minutes}" ${minutes === hostEventMinutes ? "selected" : ""}>${String(minutes).replace(".", ",")} phút</option>`).join("")}</select></label>
       </div>
       <button class="primary-button start-market" data-act="start" ${state.playersCount < 1 ? "disabled" : ""}>Mở thị trường · ${state.playersCount}/56 người</button>
     </footer>
@@ -191,6 +207,7 @@ function tradingHeader() {
     </div>
     <div class="header-actions">
       ${view === "player" ? `<div class="account-chip"><small>Tài khoản cá nhân</small><b>${escapeHtml(player?.nickname || "")} · ${escapeHtml(myTeam?.name || "")}</b></div>` : `<span class="header-status"><i class="connection-dot"></i><small>Màn điều khiển</small></span>`}
+      <button class="secondary-button home-button" data-act="home" aria-label="Về trang chủ">← <span>Trang chủ</span></button>
       <button class="icon-button" data-act="fullscreen" aria-label="Toàn màn hình">⛶</button>
       ${view === "host" ? `<button class="danger-button" data-act="end">Kết thúc trận</button>` : ""}
     </div>
@@ -201,7 +218,7 @@ function eventStrip() {
   const game = state.game;
   const events = game.activeEvents;
   const content = events.length
-    ? events.map((event) => `<article class="event-card"><span class="event-icon">${escapeHtml(event.icon)}</span><div><small>${escapeHtml(event.tag)}</small><b>${escapeHtml(event.title)}</b><p>${escapeHtml(event.description)}</p></div></article>`).join("")
+    ? events.map((event) => `<article class="event-card${event.urgent ? " urgent" : ""}"><span class="event-icon">${escapeHtml(event.icon)}</span><div><small>${escapeHtml(event.tag)}</small><b>${escapeHtml(event.title)}</b><p>${escapeHtml(event.description)}</p></div></article>`).join("")
     : `<article class="event-empty"><span class="event-icon">⌛</span><div><b>Thị trường đang tự điều chỉnh</b><small>Chưa có cú sốc mới. Giá vẫn biến động theo cung và cầu.</small></div></article>`;
   return `<section class="event-strip">
     <div class="event-label"><p class="eyebrow">Bản tin thị trường</p><b>${events.length ? `Đợt sự kiện ${game.eventRound}` : "Chờ sự kiện đầu"}</b><small>Sự kiện tiếp theo: <span class="next-event" data-countdown-end="${game.nextEventAt}">--:--</span></small></div>
@@ -217,17 +234,20 @@ function chartSvg(market) {
   const right = 88;
   const top = 22;
   const bottom = 35;
-  const candleWindowMs = 3_000;
+  const candleWindowMs = 5_000;
   const candles = [];
   for (const point of history) {
     const bucket = Math.floor(Number(point.at) / candleWindowMs) * candleWindowMs;
     const price = Number(point.price);
+    const pointHigh = Number(point.high ?? price);
+    const pointLow = Number(point.low ?? price);
     const current = candles.at(-1);
-    if (!current || current.at !== bucket) candles.push({ at: bucket, open: price, high: price, low: price, close: price });
+    if (!current || current.at !== bucket) candles.push({ at: bucket, open: price, high: pointHigh, low: pointLow, close: price, samples: 1 });
     else {
-      current.high = Math.max(current.high, price);
-      current.low = Math.min(current.low, price);
+      current.high = Math.max(current.high, pointHigh);
+      current.low = Math.min(current.low, pointLow);
       current.close = price;
+      current.samples += 1;
     }
   }
   const prices = candles.flatMap((candle) => [candle.high, candle.low]);
@@ -241,15 +261,18 @@ function chartSvg(market) {
   const slotWidth = plotWidth / Math.max(1, candles.length);
   const x = (index) => left + slotWidth * index + slotWidth / 2;
   const y = (price) => top + ((maximum - price) / range) * (height - top - bottom);
-  const candleWidth = Math.max(5, Math.min(22, slotWidth * 0.82));
+  const candleWidth = Math.max(4, Math.min(16, slotWidth * 0.62));
   const candleShapes = candles.map((candle, index) => {
     const center = x(index);
     const openY = y(candle.open);
     const closeY = y(candle.close);
     const rising = candle.close >= candle.open;
-    const color = rising ? "#58e08f" : "#ff6b76";
-    return `<g class="candle ${rising ? "up" : "down"}"><line class="candle-wick" x1="${center}" y1="${y(candle.high)}" x2="${center}" y2="${y(candle.low)}" stroke="${color}"></line><rect class="candle-body" x="${center - candleWidth / 2}" y="${Math.min(openY, closeY)}" width="${candleWidth}" height="${Math.max(2.5, Math.abs(closeY - openY))}" rx="1.5" fill="${color}" stroke="${color}"></rect></g>`;
+    const color = rising ? "#087a45" : "#c73747";
+    const bodyHeight = Math.max(1.5, Math.abs(closeY - openY));
+    return `<g class="candle ${rising ? "up" : "down"}"><line class="candle-wick" x1="${center}" y1="${y(candle.high)}" x2="${center}" y2="${y(candle.low)}" stroke="${color}"></line><rect class="candle-body" x="${center - candleWidth / 2}" y="${Math.min(openY, closeY)}" width="${candleWidth}" height="${bodyHeight}" fill="${color}" stroke="${color}"></rect></g>`;
   }).join("");
+  const currentPriceY = y(market.price);
+  const currentPrice = `<line class="current-price-line" x1="${left}" y1="${currentPriceY}" x2="${width - right}" y2="${currentPriceY}"></line><rect class="current-price-label-bg" x="${width - right + 5}" y="${currentPriceY - 11}" width="78" height="22" rx="3"></rect><text class="current-price-label" x="${width - right + 44}" y="${currentPriceY + 5}" text-anchor="middle">${escapeHtml(formatPrice(market.price))}</text>`;
   const lines = Array.from({ length: 5 }, (_, index) => {
     const ratio = index / 4;
     const lineY = top + ratio * (height - top - bottom);
@@ -261,14 +284,35 @@ function chartSvg(market) {
   return `<svg class="market-chart" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" role="img" aria-label="Biểu đồ nến giá ngành ${escapeHtml(market.sector)} của ${escapeHtml(market.country)}">
     ${lines}
     ${candleShapes}
+    ${currentPrice}
     <text class="chart-label" x="${left}" y="${height - 9}">${escapeHtml(firstTime)}</text>
     <text class="chart-label" x="${width - right}" y="${height - 9}" text-anchor="end">${escapeHtml(lastTime)}</text>
   </svg>`;
 }
 
-function tradeTape() {
-  const transaction = state.game.tradeTape[0];
-  return `<div class="trade-tape"><div class="trade-tape-header">Lệnh gần nhất trên toàn sàn</div>${transaction ? `<div class="tape-row"><span class="tape-side ${transaction.side === "sell" ? "sell" : ""}">${transaction.side === "buy" ? "MUA" : "BÁN"}</span><b>${escapeHtml(transaction.symbol)}</b><span>${escapeHtml(transaction.playerName || transaction.teamName)} · ${escapeHtml(transaction.teamName)} · ${integerFormat.format(transaction.quantity)} cổ phiếu</span><strong>${formatPrice(transaction.price)}</strong></div>` : `<div class="tape-row"><span class="muted">Chưa có giao dịch nào được khớp.</span></div>`}</div>`;
+function marketVolume() {
+  const market = marketBySymbol();
+  const buyVolume = Number(market.buyVolume || 0);
+  const sellVolume = Number(market.sellVolume || 0);
+  const totalVolume = buyVolume + sellVolume;
+  const buyShare = totalVolume ? Math.round((buyVolume / totalVolume) * 100) : 50;
+  const sellShare = totalVolume ? 100 - buyShare : 50;
+  return `<div class="market-volume">
+    <div class="market-volume-heading"><small>Khối lượng · ${escapeHtml(market.symbol)}</small><b>${integerFormat.format(totalVolume)} CP</b></div>
+    <div class="volume-split"><span><small>Chủ động mua</small><b>${integerFormat.format(buyVolume)} · ${totalVolume ? buyShare : 0}%</b></span><span class="sell"><small>Chủ động bán</small><b>${integerFormat.format(sellVolume)} · ${totalVolume ? sellShare : 0}%</b></span></div>
+    <div class="volume-bar" aria-label="Tỷ lệ khối lượng mua ${totalVolume ? buyShare : 0}% và bán ${totalVolume ? sellShare : 0}%"><i style="width:${totalVolume ? buyShare : 50}%"></i></div>
+    <div class="volume-meta"><span><small>Số lệnh</small><b>${integerFormat.format(market.tradeCount || 0)}</b></span><span><small>Giá khớp gần nhất</small><b>${market.lastTradePrice == null ? "—" : formatPrice(market.lastTradePrice)}</b></span></div>
+  </div>`;
+}
+
+function hostPulse() {
+  const mood = state.game.mood || { score: 0, intensity: 0, label: "Thận trọng", buyVolume: 0, sellVolume: 0 };
+  const position = Math.max(0, Math.min(100, (Number(mood.score) + 100) / 2));
+  return `<div class="host-pulse">
+    <div class="pulse-heading"><small>Tâm lý thị trường · 30 giây</small><b>${escapeHtml(mood.label)}</b></div>
+    <div class="fear-greed-scale"><span>Sợ hãi</span><span>Hưng phấn</span><i style="left:${position}%"></i></div>
+    <div class="pulse-stats"><span><small>Áp lực bán</small><b class="down">${integerFormat.format(mood.sellVolume)} CP</b></span><span><small>Cường độ</small><b>${integerFormat.format(mood.intensity)}/100</b></span><span><small>Áp lực mua</small><b class="up">${integerFormat.format(mood.buyVolume)} CP</b></span></div>
+  </div>`;
 }
 
 function insightCard() {
@@ -281,11 +325,11 @@ function chartPanel() {
   const down = market.changePct < 0;
   return `<section class="chart-panel panel">
     <div class="chart-heading">
-      <div class="market-identity"><span class="market-flag">${market.flag}</span><div class="market-name"><b>${escapeHtml(market.sector)} <span>${escapeHtml(market.country)}</span></b><small>${escapeHtml(market.symbol)} · ${escapeHtml(market.modelName)} · nến 3 giây / 2 phút</small></div></div>
+      <div class="market-identity"><span class="market-flag">${market.flag}</span><div class="market-name"><b>${escapeHtml(market.sector)} <span>${escapeHtml(market.country)}</span></b><small>${escapeHtml(market.symbol)} · ${escapeHtml(market.modelName)} · nến OHLC 5 giây</small></div></div>
       <div class="headline-price"><strong class="price">${formatPrice(market.price)}</strong><span class="change ${down ? "down" : ""}">${formatSigned(market.changePct, "%")}</span></div>
     </div>
     <div class="chart-wrap">${chartSvg(market)}</div>
-    <div class="chart-footer">${tradeTape()}${insightCard()}</div>
+    <div class="chart-footer">${view === "host" ? hostPulse() : marketVolume()}${insightCard()}</div>
   </section>`;
 }
 
@@ -293,7 +337,7 @@ function quoteCard(market) {
   const down = market.changePct < 0;
   return `<button class="quote-card ${market.symbol === selectedSymbol ? "selected" : ""}" data-symbol="${escapeHtml(market.symbol)}">
     <span class="quote-flag">${market.flag}</span>
-    <span class="quote-name"><b>${escapeHtml(market.sector)} · ${escapeHtml(market.country)}</b><small>${escapeHtml(market.symbol)} · ${market.model === "capitalist" ? "Tư bản chủ nghĩa" : "Định hướng XHCN"}</small></span>
+    <span class="quote-name"><b>${escapeHtml(market.sector)} · ${escapeHtml(market.country)}</b><small>${escapeHtml(market.symbol)} · ${market.model === "capitalist" ? "Tư bản chủ nghĩa" : "Định hướng xã hội chủ nghĩa"}</small></span>
     <span class="quote-values"><b class="quote-price">${formatPrice(market.price)}</b><small class="${down ? "down" : ""}">${formatSigned(market.changePct, "%")}</small></span>
   </button>`;
 }
@@ -303,9 +347,9 @@ function quotesPanel() {
 }
 
 function leaderboardPanel() {
-  return `<section class="leaderboard-panel panel"><div class="side-heading"><b>Xếp hạng tài sản</b><small>Cập nhật trực tiếp</small></div><div class="leaderboard-list">${state.game.leaderboard.map((entry) => {
+  return `<section class="leaderboard-panel panel"><div class="side-heading"><b>Hiệu suất trung bình đội</b><small>Công bằng theo % mỗi người</small></div><div class="leaderboard-list">${state.game.leaderboard.map((entry) => {
     const down = entry.profit < 0;
-    return `<article class="rank-row ${entry.teamId === player?.teamId ? "me" : ""}" style="--team-color:${safeColor(entry.color)}"><span class="rank-number">#${entry.rank}</span><i class="rank-color"></i><div class="rank-team"><b>${escapeHtml(entry.teamName)}</b><small>TB ${entry.members} người · ${entry.trades} lệnh</small></div><div class="rank-value"><b>${formatMoney(entry.netWorth)}</b><small class="${down ? "down" : ""}">${formatSigned(entry.profitPct, "%")}</small></div></article>`;
+    return `<article class="rank-row ${entry.teamId === player?.teamId ? "me" : ""}" style="--team-color:${safeColor(entry.color)}"><span class="rank-number">#${entry.rank}</span><i class="rank-color"></i><div class="rank-team"><b>${escapeHtml(entry.teamName)}</b><small>${entry.members} người · ${entry.trades} lệnh</small></div><div class="rank-value"><b class="${down ? "down" : ""}">${formatSigned(entry.profitPct, "%")}</b><small>TB ${formatMoney(entry.netWorth)}</small></div></article>`;
   }).join("")}</div></section>`;
 }
 
@@ -340,8 +384,7 @@ function orderTicket() {
   const game = state.game;
   const portfolio = game.portfolio;
   const market = marketBySymbol();
-  const boardEntry = game.leaderboard.find((entry) => entry.teamId === portfolio.teamId);
-  const profit = boardEntry?.profit || 0;
+  const profit = portfolio.netWorth - 100_000;
   const quantity = Number(orderQuantity) || 0;
   const maximum = maxOrderQuantity();
   const invalid = quantity < 1 || quantity > maximum || tradePending;
@@ -378,8 +421,8 @@ function finishScreen() {
   return `<main class="finish-screen screen">
     <header class="app-header">${brand()}<div class="header-actions"><span class="room-chip"><span>Phòng</span><b>${escapeHtml(state.code)}</b></span><button class="primary-button" data-act="home">Về trang chủ</button></div></header>
     <section class="finish-main">
-      <article class="winner-panel panel" style="--winner-color:${safeColor(winner.color)}"><div><div class="trophy">◆</div><p class="eyebrow">Dẫn đầu thị trường</p><h1>${escapeHtml(winner.teamName)}</h1><strong class="winner-worth">${formatMoney(winner.netWorth)}</strong><p>Trung bình ${winner.members} thành viên đạt ${formatSigned(winner.profitPct, "%")} sau ${winner.trades} giao dịch.</p></div><div class="winner-note">Xếp hạng theo tài sản trung bình mỗi người trong đội tại thời điểm đóng cửa.${myResult ? ` Đội bạn đứng hạng ${myResult.rank}.` : ""}</div></article>
-      <section class="final-ranking panel"><div class="panel-heading"><div><p class="eyebrow">Kết quả cuối cùng</p><h2>Bảng tài sản các đội</h2></div><span class="player-count"><strong>${board.length}</strong> đội</span></div><div class="final-list" style="--rows:${board.length}">${board.map((entry) => `<article class="final-row ${entry.teamId === player?.teamId ? "me" : ""}" style="--team-color:${safeColor(entry.color)}"><span class="final-rank">#${entry.rank}</span><i class="rank-color"></i><div class="final-team"><b>${escapeHtml(entry.teamName)}</b><small>${entry.trades} giao dịch · phí đã tính trong tài sản</small></div><span class="final-profit ${entry.profit < 0 ? "down" : ""}">${formatSigned(entry.profitPct, "%")}</span><strong class="final-worth">${formatMoney(entry.netWorth)}</strong></article>`).join("")}</div></section>
+      <article class="winner-panel panel" style="--winner-color:${safeColor(winner.color)}"><div><div class="trophy">◆</div><p class="eyebrow">Dẫn đầu thị trường</p><h1>${escapeHtml(winner.teamName)}</h1><strong class="winner-worth">${formatSigned(winner.profitPct, "%")}</strong><p>Hiệu suất trung bình của ${winner.members} thành viên sau ${winner.trades} giao dịch; tài sản trung bình ${formatMoney(winner.netWorth)}.</p></div><div class="winner-note">Xếp hạng theo phần trăm lãi/lỗ trung bình mỗi người, nên đội ít hay nhiều thành viên đều cùng một chuẩn vốn 100.000đ.${myResult ? ` Đội bạn đứng hạng ${myResult.rank}.` : ""}</div></article>
+      <section class="final-ranking panel"><div class="panel-heading"><div><p class="eyebrow">Kết quả cuối cùng</p><h2>Bảng hiệu suất trung bình</h2></div><span class="player-count"><strong>${board.length}</strong> đội</span></div><div class="final-list" style="--rows:${board.length}">${board.map((entry) => `<article class="final-row ${entry.teamId === player?.teamId ? "me" : ""}" style="--team-color:${safeColor(entry.color)}"><span class="final-rank">#${entry.rank}</span><i class="rank-color"></i><div class="final-team"><b>${escapeHtml(entry.teamName)}</b><small>${entry.members} người · ${entry.trades} giao dịch · đã trừ phí</small></div><span class="final-profit ${entry.profit < 0 ? "down" : ""}">${formatSigned(entry.profitPct, "%")}</span><strong class="final-worth">TB ${formatMoney(entry.netWorth)}</strong></article>`).join("")}</div></section>
     </section>
   </main>`;
 }
@@ -403,8 +446,7 @@ function patchOrderTicket() {
   const portfolio = state.game.portfolio;
   if (!portfolio) return;
   const market = marketBySymbol();
-  const boardEntry = state.game.leaderboard.find((entry) => entry.teamId === portfolio.teamId);
-  const profit = boardEntry?.profit || 0;
+  const profit = portfolio.netWorth - 100_000;
   const stats = document.querySelectorAll(".portfolio-stat b");
   if (stats.length === 3) {
     stats[0].textContent = formatMoney(portfolio.netWorth);
@@ -687,7 +729,12 @@ app.addEventListener("click", async (event) => {
     return;
   }
   if (action === "end") {
-    if (!confirm("Đóng thị trường và chốt bảng xếp hạng ngay?")) return;
+    const confirmed = await askConfirmation({
+      title: "Kết thúc thị trường?",
+      message: "Giá sẽ dừng ngay và bảng hiệu suất trung bình được chốt cho tất cả đội.",
+      confirmLabel: "Kết thúc và chốt điểm",
+    });
+    if (!confirmed) return;
     socket.emit("host:end", host, (result) => {
       if (!result.ok) showToast(result.message || "Không thể kết thúc trận", "error");
     });
